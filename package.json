@@ -1,0 +1,10 @@
+{
+  "name": "notes-app-nestjs",
+  "version": "1.0.0",
+  "description": "Just a small notes app",
+  "main": "dist/main.js",
+  "repository": "https://github.com/binarstrike/notes-app-nestjs.git",
+  "author": "Binar Nugroho <binarnugroho775@gmail.com>",
+  "license": "UNLICENSED",
+  "private": true
+}
