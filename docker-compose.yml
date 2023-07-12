@@ -2,36 +2,36 @@ version: '3'
 
 # docker compose --env-file .env.{dev,test}.local up {test_db,dev_db} -d
 # docker compose rm {test_db,dev_db} -s -f -v # jika volume nya diberi nama maka volume tersebut tidak ikut terhapus
-# docker compose --env-file .env.{dev,test}.local down -v # full shutdown + menghapus semua volume
+# docker compose --env-file .env.{dev,test}.local down -v # menghapus container dan semua volume
 
 services:
   dev_db:
     image: mongo:6-jammy
     container_name: dev_db
     ports:
-      - ${DB_PORT}:27017
+      - ${DB_PORT}:${DB_PORT}
     healthcheck:
       test: test `
-        [ ! -f /.rs_initiated ] && mongosh --eval "rs.initiate({_id:'rs0',version:1,members:[{_id:0,host:'localhost'}]})" > /dev/null 2>&1 && touch /.rs_initiated || true && 
-        [ ! -f /.user_created ] && mongosh --eval "use admin" -f create-user.js > /dev/null 2>&1 && touch /.user_created || true && 
+        [ ! -f /.rs_initiated ] && mongosh --port ${DB_PORT} --eval "rs.initiate({_id:'rs0',version:1,members:[{_id:0,host:'localhost:${DB_PORT}'}]})" > /dev/null 2>&1 && touch /.rs_initiated || true && 
+        [ ! -f /.user_created ] && mongosh --port ${DB_PORT} --eval "use admin" -f create-user.js > /dev/null 2>&1 && touch /.user_created || true && 
         echo 0 || echo 1` -eq 0
       interval: 5s
     command: /bin/bash -c "
       echo \"db.createUser({user:'${DB_USER}',pwd:'${DB_PASSWORD}',roles:[]})\" > /create-user.js && 
-      /usr/local/bin/docker-entrypoint.sh mongod --replSet rs0 --bind_ip_all"
+      /usr/local/bin/docker-entrypoint.sh mongod --replSet rs0 --bind_ip_all --port ${DB_PORT}"
   
   test_db:
     image: mongo:6-jammy
     container_name: test_db
     ports:
-      - ${DB_PORT}:27017
+      - ${DB_PORT}:${DB_PORT}
     healthcheck:
       test: test `
-        [ ! -f /.rs_initiated ] && mongosh --eval "rs.initiate({_id:'rs0',version:1,members:[{_id:0,host:'localhost'}]})" > /dev/null 2>&1 && touch /.rs_initiated || true && 
-        [ ! -f /.user_created ] && mongosh --eval "use admin" -f create-user.js > /dev/null 2>&1 && touch /.user_created || true && 
+        [ ! -f /.rs_initiated ] && mongosh --port ${DB_PORT} --eval "rs.initiate({_id:'rs0',version:1,members:[{_id:0,host:'localhost:${DB_PORT}'}]})" > /dev/null 2>&1 && touch /.rs_initiated || true && 
+        [ ! -f /.user_created ] && mongosh --port ${DB_PORT} --eval "use admin" -f create-user.js > /dev/null 2>&1 && touch /.user_created || true && 
         echo 0 || echo 1` -eq 0
       interval: 5s
     command: >
       /bin/bash -c "\
       echo \"db.createUser({user:'${DB_USER}',pwd:'${DB_PASSWORD}',roles:[]})\" > /create-user.js && \
-      /usr/local/bin/docker-entrypoint.sh mongod --replSet rs0 --bind_ip_all"
+      /usr/local/bin/docker-entrypoint.sh mongod --replSet rs0 --bind_ip_all --port ${DB_PORT}"
