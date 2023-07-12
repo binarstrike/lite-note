@@ -3,12 +3,24 @@ import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { EnvConfigType } from '../../config';
+import { PrismaService } from '../../prisma/prisma.service';
+import { z } from 'zod';
+
+const payloadValidation = z.object({
+  sub: z.string(),
+  email: z.string(),
+});
+
+type payloadValidationType = z.infer<typeof payloadValidation>;
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   //* karena class Strategy dari berasal dari package passport-jwt maka
   //* parameter kedua dari fungsi PassportStrategy diatas secara default adalah jwt
-  constructor(config: ConfigService<EnvConfigType, true>) {
+  constructor(
+    config: ConfigService<EnvConfigType, true>,
+    private prisma: PrismaService,
+  ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
@@ -16,7 +28,19 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     });
   }
 
-  validate(payload: any) {
-    return payload;
+  async validate(payload: payloadValidationType) {
+    const parsedPayload = payloadValidation.parse(payload);
+
+    const user = await this.prisma.user.findUnique({
+      where: {
+        id: parsedPayload.sub,
+      },
+      select: {
+        email: true,
+        name: true,
+        id: true,
+      },
+    });
+    return user;
   }
 }
