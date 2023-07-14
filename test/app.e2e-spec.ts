@@ -137,11 +137,11 @@ describe('App e2e', () => {
     });
   });
   describe('Notes', () => {
-    const testNote: CreateNoteDto = {
+    const testCreateNote: CreateNoteDto = {
       title: 'Foo',
       description: 'Foo Bar',
     };
-    const updateTestNote: UpdateNoteDto = {
+    const testUpdateNote: UpdateNoteDto = {
       title: 'Any note',
       description: 'Any note Description',
     };
@@ -164,9 +164,9 @@ describe('App e2e', () => {
           .spec()
           .post('/notes')
           .withHeaders('Authorization', `Bearer $S{${STORES_ACCESS_TOKEN}}`)
-          .withBody(testNote)
+          .withBody(testCreateNote)
           .expectStatus(201)
-          .expectJsonMatch({ ...testNote })
+          .expectJsonMatch({ ...testCreateNote })
           .stores(STORES_NOTE_ID, 'id');
         //* menyimpan nilai id note pada variabel noteId
       });
@@ -179,7 +179,7 @@ describe('App e2e', () => {
           .withHeaders('Authorization', `Bearer $S{${STORES_ACCESS_TOKEN}}`)
           .expectStatus(200)
           .expectJsonLength(1)
-          .expectJsonMatch([{ ...testNote }]);
+          .expectJsonMatch([{ ...testCreateNote }]);
       });
     });
     describe('Get note by id', () => {
@@ -192,7 +192,7 @@ describe('App e2e', () => {
           .withHeaders('Authorization', `Bearer $S{${STORES_ACCESS_TOKEN}}`)
           .withPathParams('id', `$S{${STORES_NOTE_ID}}`)
           .expectStatus(200)
-          .expectJsonMatch({ ...testNote });
+          .expectJsonMatch({ ...testCreateNote });
       });
     });
     describe('Update note by id', () => {
@@ -202,9 +202,9 @@ describe('App e2e', () => {
           .patch(`/notes/$S{${STORES_NOTE_ID}}`)
           .withHeaders('Authorization', `Bearer $S{${STORES_ACCESS_TOKEN}}`)
           .withPathParams('id', `$S{${STORES_NOTE_ID}}`)
-          .withBody(updateTestNote)
+          .withBody(testUpdateNote)
           .expectStatus(200)
-          .expectJsonMatch({ ...updateTestNote });
+          .expectJsonMatch({ ...testUpdateNote });
       });
       it('should throw an error if an unknown note id is provided', async () => {
         return pactum
@@ -212,7 +212,7 @@ describe('App e2e', () => {
           .patch(`/notes/64ae31870c09330399b64346`)
           .withHeaders('Authorization', `Bearer $S{${STORES_ACCESS_TOKEN}}`)
           .withPathParams('id', `$S{${STORES_NOTE_ID}}`)
-          .withBody(updateTestNote)
+          .withBody(testUpdateNote)
           .expectStatus(403);
       });
     });

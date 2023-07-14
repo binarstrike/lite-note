@@ -6,12 +6,12 @@ import { EnvConfigType } from '../../config';
 import { PrismaService } from '../../prisma/prisma.service';
 import { z } from 'zod';
 
-const payloadValidation = z.object({
+const jwtPayloadValidation = z.object({
   sub: z.string(),
   email: z.string(),
 });
 
-type payloadValidationType = z.infer<typeof payloadValidation>;
+type jwtPayloadValidationType = z.infer<typeof jwtPayloadValidation>;
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
@@ -28,12 +28,12 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     });
   }
 
-  async validate(payload: payloadValidationType) {
-    const parsedPayload = payloadValidation.parse(payload);
+  async validate(payload: jwtPayloadValidationType) {
+    const parsedJwtPayload = jwtPayloadValidation.parse(payload);
 
     const user = await this.prisma.user.findUnique({
       where: {
-        id: parsedPayload.sub,
+        id: parsedJwtPayload.sub,
       },
       select: {
         email: true,

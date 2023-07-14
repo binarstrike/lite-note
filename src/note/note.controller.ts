@@ -26,8 +26,8 @@ export class NoteController {
   }
 
   @Post()
-  createNote(@GetUser('id') userId: string, @Body() createNote: CreateNoteDto) {
-    return this.noteService.createNote(userId, createNote);
+  createNote(@GetUser('id') userId: string, @Body() dto: CreateNoteDto) {
+    return this.noteService.createNote(userId, dto);
   }
 
   @Get(':noteId')
@@ -39,9 +39,9 @@ export class NoteController {
   updateNoteById(
     @GetUser('id') userId: string,
     @Param('noteId') noteId: string,
-    @Body() updateNote: UpdateNoteDto,
+    @Body() dto: UpdateNoteDto,
   ) {
-    return this.noteService.updateNoteById(userId, noteId, updateNote);
+    return this.noteService.updateNoteById(userId, noteId, dto);
   }
 
   @Delete(':noteId')

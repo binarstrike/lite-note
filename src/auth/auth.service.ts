@@ -14,13 +14,13 @@ export class AuthService {
     private jwt: JwtService,
     private config: ConfigService<EnvConfigType, true>,
   ) {}
-  async signup(createUser: CreateUserDto) {
-    const hash = await argon.hash(createUser.password);
+  async signup(dto: CreateUserDto) {
+    const hash = await argon.hash(dto.password);
     try {
       const user = await this.prisma.user.create({
         data: {
-          email: createUser.email,
-          name: createUser.name,
+          email: dto.email,
+          name: dto.name,
           hash,
         },
       });
@@ -35,10 +35,10 @@ export class AuthService {
     }
   }
 
-  async signin(userLogin: UserLoginDto) {
+  async signin(dto: UserLoginDto) {
     //* cari user di database
     const user = await this.prisma.user.findUnique({
-      where: { email: userLogin.email },
+      where: { email: dto.email },
     });
 
     //* jika user tidak ditemukan atau ada kesalahan pada input data maka akan throw error
@@ -47,7 +47,7 @@ export class AuthService {
     }
 
     //* bandingkan password input dari user dengan hash yang ada pada database
-    const comparePassword = await argon.verify(user.hash, userLogin.password);
+    const comparePassword = await argon.verify(user.hash, dto.password);
 
     //* jika passowrd salah maka akan throw error
     if (!comparePassword) {

@@ -7,13 +7,13 @@ export class AuthController {
   constructor(private authService: AuthService) {}
 
   @Post('signup') //* /auth/signup
-  signup(@Body() createUser: CreateUserDto) {
-    return this.authService.signup(createUser);
+  signup(@Body() dto: CreateUserDto) {
+    return this.authService.signup(dto);
   }
 
   @HttpCode(HttpStatus.OK) //* set status kode menjadi 200 OK
   @Post('signin') //* /auth/signin
-  async signin(@Body() userLogin: UserLoginDto) {
-    return this.authService.signin(userLogin);
+  async signin(@Body() dto: UserLoginDto) {
+    return this.authService.signin(dto);
   }
 }

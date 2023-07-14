@@ -3,7 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateNoteDto, UpdateNoteDto } from './dto';
 import { Note } from '@prisma/client';
 
-const selectNoteQueryProp: Record<keyof Omit<Note, 'userId'>, boolean> = {
+const selectedNoteFields: Record<keyof Omit<Note, 'userId'>, boolean> = {
   id: true,
   title: true,
   description: true,
@@ -18,15 +18,15 @@ export class NoteService {
   async getNotes(userId: string) {
     const notes = await this.prisma.note.findMany({
       where: { userId },
-      select: selectNoteQueryProp,
+      select: selectedNoteFields,
     });
     return notes;
   }
 
-  async createNote(userId: string, createNote: CreateNoteDto) {
+  async createNote(userId: string, dto: CreateNoteDto) {
     const note = await this.prisma.note.create({
-      data: { userId, ...createNote },
-      select: selectNoteQueryProp,
+      data: { userId, ...dto },
+      select: selectedNoteFields,
     });
     return note;
   }
@@ -34,16 +34,12 @@ export class NoteService {
   async getNoteById(userId: string, noteId: string) {
     const note = await this.prisma.note.findFirst({
       where: { userId, id: noteId },
-      select: selectNoteQueryProp,
+      select: selectedNoteFields,
     });
     return note;
   }
 
-  async updateNoteById(
-    userId: string,
-    noteId: string,
-    updateNote: UpdateNoteDto,
-  ) {
+  async updateNoteById(userId: string, noteId: string, dto: UpdateNoteDto) {
     const note = await this.prisma.note.findUnique({
       where: { id: noteId },
     });
@@ -53,7 +49,7 @@ export class NoteService {
 
     return this.prisma.note.update({
       where: { id: noteId },
-      data: { ...updateNote },
+      data: { ...dto },
     });
   }
 
