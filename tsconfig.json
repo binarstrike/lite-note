@@ -11,13 +11,12 @@
     "outDir": "./dist",
     "incremental": true,
     "skipLibCheck": true,
-    "strictPropertyInitialization": false, //* menghilangkan error pada file .dto.ts
+    "strictPropertyInitialization": false,
     "strictNullChecks": true, 
-    //* ^ zod need this to be true to see the correct type while checking type on editor
     "noImplicitAny": false,
     "strictBindCallApply": false,
     "forceConsistentCasingInFileNames": false,
     "noFallthroughCasesInSwitch": false,
-    "strict": true //* zod need this to be true
+    "strict": true
   }
 }
