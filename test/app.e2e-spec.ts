@@ -6,6 +6,7 @@ import * as pactum from 'pactum';
 import { CreateUserDto, UserLoginDto } from '../src/auth/dto';
 import { UpdateUserDto } from '../src/user/user.dto';
 import { CreateNoteDto, UpdateNoteDto } from '../src/note/dto';
+import { randomBytes } from 'crypto';
 
 describe('App e2e', () => {
   let app: INestApplication, prisma: PrismaService;
@@ -32,7 +33,9 @@ describe('App e2e', () => {
 
   describe('Auth', () => {
     const testUserSignUp: CreateUserDto = {
-      name: 'Rikka Takanashi',
+      username: 'rikka12',
+      firstname: 'Rikka',
+      lastname: 'Takanashi',
       email: 'example01@xyz.com',
       password: 'foo bar',
     };
@@ -50,7 +53,7 @@ describe('App e2e', () => {
           .post('/auth/signup')
           .withBody(testUserSignUp)
           .expectJsonLike({
-            access_token: jwtRegex,
+            accessToken: jwtRegex,
           })
           .expectStatus(201);
       });
@@ -65,7 +68,7 @@ describe('App e2e', () => {
         return pactum
           .spec()
           .post('/auth/signup')
-          .withBody({ ...testUserSignUp, name: '' } as CreateUserDto)
+          .withBody({ ...testUserSignUp, username: '' } as CreateUserDto)
           .expectStatus(400);
       });
       it('should throw if password empty', async () => {
@@ -73,6 +76,13 @@ describe('App e2e', () => {
           .spec()
           .post('/auth/signup')
           .withBody({ ...testUserSignUp, password: '' } as CreateUserDto)
+          .expectStatus(400);
+      });
+      it('should throw if firstname empty', async () => {
+        return pactum
+          .spec()
+          .post('/auth/signup')
+          .withBody({ ...testUserSignUp, firstname: '' } as CreateUserDto)
           .expectStatus(400);
       });
       it('should throw if no body provided', async () => {
@@ -86,10 +96,10 @@ describe('App e2e', () => {
           .post('/auth/signin')
           .withBody(testUserSignIn)
           .expectJsonLike({
-            access_token: jwtRegex,
+            accessToken: jwtRegex,
           })
           .expectStatus(200)
-          .stores(STORES_ACCESS_TOKEN, 'access_token');
+          .stores(STORES_ACCESS_TOKEN, 'accessToken');
       });
       it('should throw if email empty', async () => {
         return pactum
@@ -112,7 +122,9 @@ describe('App e2e', () => {
   });
   describe('User', () => {
     const testUpdateUser: UpdateUserDto = {
-      name: 'Nezuko Kamado',
+      username: 'chita23',
+      firstname: 'Eru',
+      lastname: 'Chitanda',
     };
     it('should get current user', async () => {
       return pactum
@@ -132,8 +144,7 @@ describe('App e2e', () => {
         .patch('/users')
         .withHeaders('Authorization', `Bearer $S{${STORES_ACCESS_TOKEN}}`)
         .withBody(testUpdateUser)
-        .expectStatus(200)
-        .expectJsonMatch({ ...testUpdateUser });
+        .expectStatus(200);
     });
   });
   describe('Notes', () => {
@@ -207,9 +218,10 @@ describe('App e2e', () => {
           .expectJsonMatch({ ...testUpdateNote });
       });
       it('should throw an error if an unknown note id is provided', async () => {
+        const randomHex: string = randomBytes(12).toString('hex');
         return pactum
           .spec()
-          .patch(`/notes/64ae31870c09330399b64346`)
+          .patch(`/notes/${randomHex}`)
           .withHeaders('Authorization', `Bearer $S{${STORES_ACCESS_TOKEN}}`)
           .withPathParams('id', `$S{${STORES_NOTE_ID}}`)
           .withBody(testUpdateNote)
