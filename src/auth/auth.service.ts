@@ -1,4 +1,9 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { CreateUserDto, UserLoginDto } from './dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
@@ -6,6 +11,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as argon from 'argon2';
 import { EnvConfigType } from '../config';
+import { Tokens } from '../types';
 
 @Injectable()
 export class AuthService {
@@ -14,68 +20,123 @@ export class AuthService {
     private jwt: JwtService,
     private config: ConfigService<EnvConfigType, true>,
   ) {}
-  async signup(dto: CreateUserDto) {
-    const hash = await argon.hash(dto.password);
+
+  //* /auth/signup POST handler
+  async signup(dto: CreateUserDto): Promise<Tokens> {
+    const hash = await this.hashMe(dto.password);
     try {
       const user = await this.prisma.user.create({
         data: {
           email: dto.email,
-          name: dto.name,
+          username: dto.username,
+          firstname: dto.firstname,
+          lastname: dto.lastname,
           hash,
         },
       });
-      return await this.signToken(user.id, user.email);
+      const tokens = await this.signToken(user.id);
+      await this.updateRefreshToken(user.id, tokens.refreshToken);
+      return tokens;
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
-          throw new ForbiddenException('Akun sudah terdaftar!');
+          throw new ConflictException('Account already exists');
         }
       }
       throw error;
     }
   }
-
-  async signin(dto: UserLoginDto) {
-    //* cari user di database
+  //* /auth/signin POST handler
+  async signin(dto: UserLoginDto): Promise<Tokens> {
     const user = await this.prisma.user.findUnique({
       where: { email: dto.email },
     });
 
-    //* jika user tidak ditemukan atau ada kesalahan pada input data maka akan throw error
     if (!user) {
-      throw new ForbiddenException('pengguna tidak ditemukan');
+      throw new ForbiddenException('User not found');
     }
 
-    //* bandingkan password input dari user dengan hash yang ada pada database
     const comparePassword = await argon.verify(user.hash, dto.password);
 
-    //* jika passowrd salah maka akan throw error
     if (!comparePassword) {
-      throw new ForbiddenException('kata sandi salah');
+      throw new ForbiddenException('Wrong Credentials');
     }
 
-    return await this.signToken(user.id, user.email);
+    const tokens = await this.signToken(user.id);
+    await this.updateRefreshToken(user.id, tokens.refreshToken);
+    return tokens;
   }
 
-  async signToken(
-    userId: string,
-    email: string,
-  ): Promise<{ access_token: string }> {
-    //* mengambil jwt secret dari .env variabel
-    const secret = this.config.get<string>('JWT_SECRET');
+  //* /auth/logout POST handler
+  async logout(userId: string): Promise<string> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { refreshToken: true },
+    });
+    if (!user?.refreshToken)
+      throw new UnauthorizedException(
+        'User already logged out',
+        'You are already logged out. Please log in to continue.',
+      );
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { refreshToken: null },
+    });
+    return 'success';
+  }
 
-    const payload = {
-      sub: userId,
-      email,
-    };
-
-    const token = await this.jwt.signAsync(payload, {
-      expiresIn: '15m',
-      secret,
+  //* /auth/refresh POST handler
+  async refreshTokens(userId: string, refreshToken: string): Promise<Tokens> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
     });
 
+    if (!user || !user.refreshToken)
+      throw new ForbiddenException('User not found or invalid');
+
+    const tokenMatches = await argon.verify(user.refreshToken, refreshToken);
+
+    if (!tokenMatches) throw new ForbiddenException('Token is invalid');
+
+    const tokens = await this.signToken(userId);
+
+    await this.updateRefreshToken(userId, tokens.refreshToken);
+
+    return tokens;
+  }
+
+  private async signToken(userId: string): Promise<Tokens> {
+    const [accessToken, refreshToken] = await Promise.all([
+      this.jwt.signAsync(
+        { sub: userId },
+        { secret: this.config.get<string>('JWT_SECRET'), expiresIn: '1m' }, // 15m
+      ),
+      this.jwt.signAsync(
+        { sub: userId },
+        {
+          secret: this.config.get<string>('JWT_REFRESH_SECRET'),
+          expiresIn: '7d',
+        },
+      ),
+    ]);
     return {
-      access_token: token,
+      accessToken,
+      refreshToken,
     };
+  }
+
+  private async updateRefreshToken(
+    userId: string,
+    refreshToken: string,
+  ): Promise<void> {
+    const hashedRefreshToken = await this.hashMe(refreshToken);
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { refreshToken: hashedRefreshToken },
+    });
+  }
+
+  private hashMe(data: string): Promise<string> {
+    return argon.hash(data);
   }
 }

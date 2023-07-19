@@ -61,8 +61,10 @@ export class NoteService {
     if (!note || note.userId !== userId)
       throw new ForbiddenException('Access to resources denied');
 
-    return this.prisma.note.delete({
+    const deleteNote = await this.prisma.note.delete({
       where: { id: noteId },
     });
+
+    return deleteNote;
   }
 }

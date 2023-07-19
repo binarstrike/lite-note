@@ -1,0 +1,26 @@
+import { ExecutionContext, Injectable } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
+import { AuthGuard } from '@nestjs/passport';
+
+@Injectable()
+export class JwtGuard extends AuthGuard('jwt') {
+  constructor(private reflector: Reflector) {
+    super();
+  }
+
+  /**
+   * karena guard `JwtGuard` dibuat menjadi global untuk semua controller jadi diperlukan logika
+   * untuk meneptapkan beberapa endpoint khusus yang dapat diakses secara public tanpa melewati guard
+   * yaitu `JwtGuard`.
+   */
+  canActivate<T>(ctx: ExecutionContext): T | boolean {
+    const isPublic = this.reflector.getAllAndOverride('isPublic', [
+      ctx.getHandler(),
+      ctx.getClass(),
+    ]);
+
+    if (isPublic) return true;
+
+    return super.canActivate(ctx) as T;
+  }
+}

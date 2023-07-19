@@ -7,6 +7,8 @@ import { ConfigModule } from '@nestjs/config';
 import { EnvParsedConfig } from './config';
 import { UserModule } from './user/user.module';
 import { NoteModule } from './note/note.module';
+import { APP_GUARD } from '@nestjs/core';
+import { JwtGuard } from './common/guards';
 // import { AuthService } from './auth/auth.service';
 
 //* karena AuthService merupakan bagian dari AuthModule jadi cukup dengan
@@ -28,6 +30,12 @@ import { NoteModule } from './note/note.module';
   //* namun jika ada controller tanpa module maka bisa langsung memasukan nya ke
   //* properti controllers pada root/app module
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: JwtGuard,
+    },
+  ],
 })
 export class AppModule {}

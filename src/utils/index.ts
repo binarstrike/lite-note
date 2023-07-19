@@ -1,1 +1,1 @@
-export * from './configValidation';
+export * from './validateObjectWithZod';

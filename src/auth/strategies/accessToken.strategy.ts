@@ -1,17 +1,26 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { EnvConfigType } from '../../config';
 import { PrismaService } from '../../prisma/prisma.service';
-import { z } from 'zod';
+import { JwtPayload } from '../../types';
+import { ExcludePropWithType } from '../../helpers';
+import { User } from '@prisma/client';
+import { UserWithoutHashAndEmail } from '../../types';
 
-const jwtPayloadValidation = z.object({
-  sub: z.string(),
-  email: z.string(),
-});
-
-type jwtPayloadValidationType = z.infer<typeof jwtPayloadValidation>;
+const selectedUserFields: ExcludePropWithType<
+  UserWithoutHashAndEmail,
+  'refreshToken',
+  boolean
+> = {
+  id: true,
+  username: true,
+  firstname: true,
+  lastname: true,
+  updatedAt: true,
+  createdAt: true,
+};
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
@@ -28,19 +37,16 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     });
   }
 
-  async validate(payload: jwtPayloadValidationType) {
-    const parsedJwtPayload = jwtPayloadValidation.parse(payload);
-
+  async validate(
+    payload: JwtPayload,
+  ): Promise<{ [K in keyof typeof selectedUserFields]: User[K] }> {
     const user = await this.prisma.user.findUnique({
       where: {
-        id: parsedJwtPayload.sub,
+        id: payload.sub,
       },
-      select: {
-        email: true,
-        name: true,
-        id: true,
-      },
+      select: selectedUserFields,
     });
+    if (!user) throw new ForbiddenException();
     return user;
   }
 }

@@ -8,14 +8,11 @@ import {
   Param,
   Patch,
   Post,
-  UseGuards,
 } from '@nestjs/common';
-import { JwtGuard } from '../auth/guard';
 import { NoteService } from './note.service';
-import { GetUser } from '../auth/decorator';
+import { GetUser } from '../common/decorators';
 import { CreateNoteDto, UpdateNoteDto } from './dto';
 
-@UseGuards(JwtGuard)
 @Controller('notes')
 export class NoteController {
   constructor(private noteService: NoteService) {}
