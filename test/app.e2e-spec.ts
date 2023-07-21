@@ -1,17 +1,22 @@
-import { Test } from '@nestjs/testing';
 import { AppModule } from '../src/app.module';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { CreateNoteDto, UpdateNoteDto } from '../src/note/dto';
 import { PrismaService } from '../src/prisma/prisma.service';
-import * as pactum from 'pactum';
 import { CreateUserDto, UserLoginDto } from '../src/auth/dto';
 import { UpdateUserDto } from '../src/user/user.dto';
-import { CreateNoteDto, UpdateNoteDto } from '../src/note/dto';
+import { Tokens } from '../src/types';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { Test } from '@nestjs/testing';
 import { randomBytes } from 'crypto';
+import * as pactum from 'pactum';
+import { ExcludeProp } from '../src/helpers';
+import { Note } from '@prisma/client';
 
 describe('App e2e', () => {
   let app: INestApplication, prisma: PrismaService;
-  const TEST_SERVER_PORT = 5000;
-  const STORES_ACCESS_TOKEN = 'userAt';
+  const TEST_SERVER_PORT = 5000,
+    STORES_ACCESS_TOKEN = 'userAt',
+    STORES_REFRESH_TOKEN = 'userRt';
+
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
       imports: [AppModule],
@@ -31,7 +36,7 @@ describe('App e2e', () => {
     app.close();
   });
 
-  describe('Auth', () => {
+  describe('Endpoint /auth', () => {
     const testUserSignUp: CreateUserDto = {
       username: 'rikka12',
       firstname: 'Rikka',
@@ -46,15 +51,18 @@ describe('App e2e', () => {
 
     const jwtRegex = /^[A-Za-z0-9_-]{2,}(?:\.[A-Za-z0-9_-]{2,}){2}$/;
 
-    describe('Signup', () => {
+    const expectedAuthTokensJsonResponse: { [K in keyof Tokens]: RegExp } = {
+      accessToken: jwtRegex,
+      refreshToken: jwtRegex,
+    };
+
+    describe('POST /auth/signup', () => {
       it('should signup', async () => {
         return pactum
           .spec()
           .post('/auth/signup')
           .withBody(testUserSignUp)
-          .expectJsonLike({
-            accessToken: jwtRegex,
-          })
+          .expectJsonLike(expectedAuthTokensJsonResponse)
           .expectStatus(201);
       });
       it('should throw if email empty', async () => {
@@ -89,17 +97,18 @@ describe('App e2e', () => {
         return pactum.spec().post('/auth/signup').expectStatus(400);
       });
     });
-    describe('Signin', () => {
+    describe('POST /auth/signin', () => {
       it('should signin', async () => {
         return await pactum
           .spec()
           .post('/auth/signin')
           .withBody(testUserSignIn)
-          .expectJsonLike({
-            accessToken: jwtRegex,
-          })
+          .expectJsonLike(expectedAuthTokensJsonResponse)
           .expectStatus(200)
-          .stores(STORES_ACCESS_TOKEN, 'accessToken');
+          .stores((_, res) => ({
+            [STORES_ACCESS_TOKEN]: res.body['accessToken' as keyof Tokens],
+            [STORES_REFRESH_TOKEN]: res.body['refreshToken' as keyof Tokens],
+          }));
       });
       it('should throw if email empty', async () => {
         return pactum
@@ -119,35 +128,61 @@ describe('App e2e', () => {
         return pactum.spec().post('/auth/signin').expectStatus(400);
       });
     });
+    describe('POST /auth/refresh', () => {
+      it('should refresh the tokens and return valid json object', async () => {
+        return pactum
+          .spec()
+          .post('/auth/refresh')
+          .withHeaders('Authorization', `Bearer $S{${STORES_REFRESH_TOKEN}}`)
+          .expectJsonLike(expectedAuthTokensJsonResponse)
+          .expectStatus(200)
+          .stores((_, res) => ({
+            [STORES_REFRESH_TOKEN]: res.body['refreshToken' as keyof Tokens],
+          }));
+      });
+      it('should throw if wrong token is provided', async () => {
+        return pactum
+          .spec()
+          .post('/auth/refresh')
+          .withHeaders('Authorization', `Bearer $S{${STORES_ACCESS_TOKEN}}`)
+          .expectStatus(401);
+      });
+    });
   });
-  describe('User', () => {
+  describe('Endpoint /users', () => {
     const testUpdateUser: UpdateUserDto = {
       username: 'chita23',
       firstname: 'Eru',
       lastname: 'Chitanda',
     };
-    it('should get current user', async () => {
-      return pactum
-        .spec()
-        .get('/users/me')
-        .withHeaders('Authorization', `Bearer $S{${STORES_ACCESS_TOKEN}}`) //* parameter bisa berbentuk object
-        .expectStatus(200);
-    });
-    it('should throw unauthorized response', async () => {
-      return pactum.spec().get('/users/me').expectStatus(401).expectJsonMatch({
-        message: 'Unauthorized',
+    describe('GET,PATCH /users', () => {
+      it('should get current user', async () => {
+        return pactum
+          .spec()
+          .get('/users/me')
+          .withHeaders('Authorization', `Bearer $S{${STORES_ACCESS_TOKEN}}`) //* parameter bisa berbentuk object
+          .expectStatus(200);
+      });
+      it('should throw unauthorized response', async () => {
+        return pactum
+          .spec()
+          .get('/users/me')
+          .expectStatus(401)
+          .expectJsonMatch({
+            message: 'Unauthorized',
+          });
+      });
+      it('should edit user', async () => {
+        return pactum
+          .spec()
+          .patch('/users')
+          .withHeaders('Authorization', `Bearer $S{${STORES_ACCESS_TOKEN}}`)
+          .withBody(testUpdateUser)
+          .expectStatus(200);
       });
     });
-    it('should edit user', async () => {
-      return pactum
-        .spec()
-        .patch('/users')
-        .withHeaders('Authorization', `Bearer $S{${STORES_ACCESS_TOKEN}}`)
-        .withBody(testUpdateUser)
-        .expectStatus(200);
-    });
   });
-  describe('Notes', () => {
+  describe('Endpoint /notes', () => {
     const testCreateNote: CreateNoteDto = {
       title: 'Foo',
       description: 'Foo Bar',
@@ -157,93 +192,98 @@ describe('App e2e', () => {
       description: 'Any note Description',
     };
     const STORES_NOTE_ID = 'noteId';
+    type NoteWithoutUserId = ExcludeProp<Note, 'userId'>;
 
-    describe('Get empty notes', () => {
-      it('should get notes', async () => {
-        return pactum
-          .spec()
-          .get('/notes')
-          .withHeaders('Authorization', `Bearer $S{${STORES_ACCESS_TOKEN}}`)
-          .expectStatus(200)
-          .expectBody([])
-          .expectJsonLength(0);
+    describe('GET,POST,PATCH,DELETE /notes', () => {
+      describe('Get empty notes', () => {
+        it('should get empty notes', async () => {
+          return pactum
+            .spec()
+            .get('/notes')
+            .withHeaders('Authorization', `Bearer $S{${STORES_ACCESS_TOKEN}}`)
+            .expectStatus(200)
+            .expectBody([])
+            .expectJsonLength(0);
+        });
       });
-    });
-    describe('Create note', () => {
-      it('should create note', async () => {
-        return pactum
-          .spec()
-          .post('/notes')
-          .withHeaders('Authorization', `Bearer $S{${STORES_ACCESS_TOKEN}}`)
-          .withBody(testCreateNote)
-          .expectStatus(201)
-          .expectJsonMatch({ ...testCreateNote })
-          .stores(STORES_NOTE_ID, 'id');
-        //* menyimpan nilai id note pada variabel noteId
+      describe('Create note', () => {
+        it('should create note', async () => {
+          return pactum
+            .spec()
+            .post('/notes')
+            .withHeaders('Authorization', `Bearer $S{${STORES_ACCESS_TOKEN}}`)
+            .withBody(testCreateNote)
+            .expectStatus(201)
+            .expectJsonMatch({ ...testCreateNote })
+            .stores((_, res) => ({
+              [STORES_NOTE_ID]: res.body['id' as keyof NoteWithoutUserId],
+            }));
+          //* menyimpan nilai id note pada variabel noteId
+        });
       });
-    });
-    describe('Get notes', () => {
-      it('should get notes', async () => {
-        return pactum
-          .spec()
-          .get('/notes')
-          .withHeaders('Authorization', `Bearer $S{${STORES_ACCESS_TOKEN}}`)
-          .expectStatus(200)
-          .expectJsonLength(1)
-          .expectJsonMatch([{ ...testCreateNote }]);
+      describe('Get notes', () => {
+        it('should get notes', async () => {
+          return pactum
+            .spec()
+            .get('/notes')
+            .withHeaders('Authorization', `Bearer $S{${STORES_ACCESS_TOKEN}}`)
+            .expectStatus(200)
+            .expectJsonLength(1)
+            .expectJsonMatch([{ ...testCreateNote }]);
+        });
       });
-    });
-    describe('Get note by id', () => {
-      it('should get note by id', async () => {
-        //* $S{nama_variabel} adalah cara khusus untuk mengambil nilai yang di store/tersimpan
-        //* pada variabel tertentu pada library pactum
-        return pactum
-          .spec()
-          .get(`/notes/$S{${STORES_NOTE_ID}}`)
-          .withHeaders('Authorization', `Bearer $S{${STORES_ACCESS_TOKEN}}`)
-          .withPathParams('id', `$S{${STORES_NOTE_ID}}`)
-          .expectStatus(200)
-          .expectJsonMatch({ ...testCreateNote });
+      describe('Get note by id', () => {
+        it('should get note by id', async () => {
+          //* $S{nama_variabel} adalah cara khusus untuk mengambil nilai yang di store/tersimpan
+          //* pada variabel tertentu pada library pactum
+          return pactum
+            .spec()
+            .get(`/notes/{id}`)
+            .withHeaders('Authorization', `Bearer $S{${STORES_ACCESS_TOKEN}}`)
+            .withPathParams('id', `$S{${STORES_NOTE_ID}}`)
+            .expectStatus(200)
+            .expectJsonMatch({ ...testCreateNote });
+        });
       });
-    });
-    describe('Update note by id', () => {
-      it('should update note by id', async () => {
-        return pactum
-          .spec()
-          .patch(`/notes/$S{${STORES_NOTE_ID}}`)
-          .withHeaders('Authorization', `Bearer $S{${STORES_ACCESS_TOKEN}}`)
-          .withPathParams('id', `$S{${STORES_NOTE_ID}}`)
-          .withBody(testUpdateNote)
-          .expectStatus(200)
-          .expectJsonMatch({ ...testUpdateNote });
+      describe('Update note by id', () => {
+        it('should update note by id', async () => {
+          return pactum
+            .spec()
+            .patch(`/notes/{id}`)
+            .withHeaders('Authorization', `Bearer $S{${STORES_ACCESS_TOKEN}}`)
+            .withPathParams('id', `$S{${STORES_NOTE_ID}}`)
+            .withBody(testUpdateNote)
+            .expectStatus(200)
+            .expectJsonMatch({ ...testUpdateNote });
+        });
+        it('should throw an error if an unknown note id is provided', async () => {
+          const randomHex: string = randomBytes(12).toString('hex');
+          return pactum
+            .spec()
+            .patch(`/notes/${randomHex}`)
+            .withHeaders('Authorization', `Bearer $S{${STORES_ACCESS_TOKEN}}`)
+            .withBody(testUpdateNote)
+            .expectStatus(403);
+        });
       });
-      it('should throw an error if an unknown note id is provided', async () => {
-        const randomHex: string = randomBytes(12).toString('hex');
-        return pactum
-          .spec()
-          .patch(`/notes/${randomHex}`)
-          .withHeaders('Authorization', `Bearer $S{${STORES_ACCESS_TOKEN}}`)
-          .withPathParams('id', `$S{${STORES_NOTE_ID}}`)
-          .withBody(testUpdateNote)
-          .expectStatus(403);
-      });
-    });
-    describe('Delete note by id', () => {
-      it('should delete note by id', async () => {
-        return pactum
-          .spec()
-          .delete(`/notes/$S{${STORES_NOTE_ID}}`)
-          .withHeaders('Authorization', `Bearer $S{${STORES_ACCESS_TOKEN}}`)
-          .expectStatus(204);
-      });
-      it('should get empty notes', async () => {
-        return pactum
-          .spec()
-          .get('/notes')
-          .withHeaders('Authorization', `Bearer $S{${STORES_ACCESS_TOKEN}}`)
-          .expectStatus(200)
-          .expectBody([])
-          .expectJsonLength(0);
+      describe('Delete note by id', () => {
+        it('should delete note by id', async () => {
+          return pactum
+            .spec()
+            .delete(`/notes/{id}`)
+            .withHeaders('Authorization', `Bearer $S{${STORES_ACCESS_TOKEN}}`)
+            .withPathParams('id', `$S{${STORES_NOTE_ID}}`)
+            .expectStatus(204);
+        });
+        it('should get empty notes', async () => {
+          return pactum
+            .spec()
+            .get('/notes')
+            .withHeaders('Authorization', `Bearer $S{${STORES_ACCESS_TOKEN}}`)
+            .expectStatus(200)
+            .expectBody([])
+            .expectJsonLength(0);
+        });
       });
     });
   });
