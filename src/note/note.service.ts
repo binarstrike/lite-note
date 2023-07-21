@@ -2,8 +2,9 @@ import { ForbiddenException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateNoteDto, UpdateNoteDto } from './dto';
 import { Note } from '@prisma/client';
+import { ExcludePropWithType } from '../helpers';
 
-const selectedNoteFields: Record<keyof Omit<Note, 'userId'>, boolean> = {
+const selectedNoteFields: ExcludePropWithType<Note, 'userId', boolean> = {
   id: true,
   title: true,
   description: true,
