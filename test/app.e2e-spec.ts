@@ -4,7 +4,7 @@ import { PrismaService } from '../src/prisma/prisma.service';
 import { CreateUserDto, UserLoginDto } from '../src/auth/dto';
 import { UpdateUserDto } from '../src/user/user.dto';
 import { Tokens } from '../src/types';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { HttpStatus, INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { randomBytes } from 'crypto';
 import * as pactum from 'pactum';
@@ -63,38 +63,41 @@ describe('App e2e', () => {
           .post('/auth/signup')
           .withBody(testUserSignUp)
           .expectJsonLike(expectedAuthTokensJsonResponse)
-          .expectStatus(201);
+          .expectStatus(HttpStatus.CREATED);
       });
       it('should throw if email empty', async () => {
         return pactum
           .spec()
           .post('/auth/signup')
           .withBody({ ...testUserSignUp, email: '' } as CreateUserDto)
-          .expectStatus(400);
+          .expectStatus(HttpStatus.BAD_REQUEST);
       });
       it('should throw if name empty', async () => {
         return pactum
           .spec()
           .post('/auth/signup')
           .withBody({ ...testUserSignUp, username: '' } as CreateUserDto)
-          .expectStatus(400);
+          .expectStatus(HttpStatus.BAD_REQUEST);
       });
       it('should throw if password empty', async () => {
         return pactum
           .spec()
           .post('/auth/signup')
           .withBody({ ...testUserSignUp, password: '' } as CreateUserDto)
-          .expectStatus(400);
+          .expectStatus(HttpStatus.BAD_REQUEST);
       });
       it('should throw if firstname empty', async () => {
         return pactum
           .spec()
           .post('/auth/signup')
           .withBody({ ...testUserSignUp, firstname: '' } as CreateUserDto)
-          .expectStatus(400);
+          .expectStatus(HttpStatus.BAD_REQUEST);
       });
       it('should throw if no body provided', async () => {
-        return pactum.spec().post('/auth/signup').expectStatus(400);
+        return pactum
+          .spec()
+          .post('/auth/signup')
+          .expectStatus(HttpStatus.BAD_REQUEST);
       });
     });
     describe('POST /auth/signin', () => {
@@ -104,7 +107,7 @@ describe('App e2e', () => {
           .post('/auth/signin')
           .withBody(testUserSignIn)
           .expectJsonLike(expectedAuthTokensJsonResponse)
-          .expectStatus(200)
+          .expectStatus(HttpStatus.OK)
           .stores((_, res) => ({
             [STORES_ACCESS_TOKEN]: res.body['accessToken' as keyof Tokens],
             [STORES_REFRESH_TOKEN]: res.body['refreshToken' as keyof Tokens],
@@ -115,17 +118,20 @@ describe('App e2e', () => {
           .spec()
           .post('/auth/signin')
           .withBody({ ...testUserSignUp, email: '' } as UserLoginDto)
-          .expectStatus(400);
+          .expectStatus(HttpStatus.BAD_REQUEST);
       });
       it('should throw if password empty', async () => {
         return pactum
           .spec()
           .post('/auth/signin')
           .withBody({ ...testUserSignUp, password: '' } as UserLoginDto)
-          .expectStatus(400);
+          .expectStatus(HttpStatus.BAD_REQUEST);
       });
       it('should throw if no body provided', async () => {
-        return pactum.spec().post('/auth/signin').expectStatus(400);
+        return pactum
+          .spec()
+          .post('/auth/signin')
+          .expectStatus(HttpStatus.BAD_REQUEST);
       });
     });
     describe('POST /auth/refresh', () => {
@@ -135,7 +141,7 @@ describe('App e2e', () => {
           .post('/auth/refresh')
           .withHeaders('Authorization', `Bearer $S{${STORES_REFRESH_TOKEN}}`)
           .expectJsonLike(expectedAuthTokensJsonResponse)
-          .expectStatus(200)
+          .expectStatus(HttpStatus.OK)
           .stores((_, res) => ({
             [STORES_REFRESH_TOKEN]: res.body['refreshToken' as keyof Tokens],
           }));
@@ -145,7 +151,7 @@ describe('App e2e', () => {
           .spec()
           .post('/auth/refresh')
           .withHeaders('Authorization', `Bearer $S{${STORES_ACCESS_TOKEN}}`)
-          .expectStatus(401);
+          .expectStatus(HttpStatus.UNAUTHORIZED);
       });
     });
   });
@@ -161,13 +167,13 @@ describe('App e2e', () => {
           .spec()
           .get('/users/me')
           .withHeaders('Authorization', `Bearer $S{${STORES_ACCESS_TOKEN}}`) //* parameter bisa berbentuk object
-          .expectStatus(200);
+          .expectStatus(HttpStatus.OK);
       });
       it('should throw unauthorized response', async () => {
         return pactum
           .spec()
           .get('/users/me')
-          .expectStatus(401)
+          .expectStatus(HttpStatus.UNAUTHORIZED)
           .expectJsonMatch({
             message: 'Unauthorized',
           });
@@ -178,7 +184,7 @@ describe('App e2e', () => {
           .patch('/users')
           .withHeaders('Authorization', `Bearer $S{${STORES_ACCESS_TOKEN}}`)
           .withBody(testUpdateUser)
-          .expectStatus(200);
+          .expectStatus(HttpStatus.OK);
       });
     });
   });
@@ -201,7 +207,7 @@ describe('App e2e', () => {
             .spec()
             .get('/notes')
             .withHeaders('Authorization', `Bearer $S{${STORES_ACCESS_TOKEN}}`)
-            .expectStatus(200)
+            .expectStatus(HttpStatus.OK)
             .expectBody([])
             .expectJsonLength(0);
         });
@@ -213,7 +219,7 @@ describe('App e2e', () => {
             .post('/notes')
             .withHeaders('Authorization', `Bearer $S{${STORES_ACCESS_TOKEN}}`)
             .withBody(testCreateNote)
-            .expectStatus(201)
+            .expectStatus(HttpStatus.CREATED)
             .expectJsonMatch({ ...testCreateNote })
             .stores((_, res) => ({
               [STORES_NOTE_ID]: res.body['id' as keyof NoteWithoutUserId],
@@ -227,7 +233,7 @@ describe('App e2e', () => {
             .spec()
             .get('/notes')
             .withHeaders('Authorization', `Bearer $S{${STORES_ACCESS_TOKEN}}`)
-            .expectStatus(200)
+            .expectStatus(HttpStatus.OK)
             .expectJsonLength(1)
             .expectJsonMatch([{ ...testCreateNote }]);
         });
@@ -238,10 +244,10 @@ describe('App e2e', () => {
           //* pada variabel tertentu pada library pactum
           return pactum
             .spec()
-            .get(`/notes/{id}`)
+            .get(`/notes`)
             .withHeaders('Authorization', `Bearer $S{${STORES_ACCESS_TOKEN}}`)
-            .withPathParams('id', `$S{${STORES_NOTE_ID}}`)
-            .expectStatus(200)
+            .withQueryParams({ noteId: `$S{${STORES_NOTE_ID}}` })
+            .expectStatus(HttpStatus.OK)
             .expectJsonMatch({ ...testCreateNote });
         });
       });
@@ -249,38 +255,39 @@ describe('App e2e', () => {
         it('should update note by id', async () => {
           return pactum
             .spec()
-            .patch(`/notes/{id}`)
+            .patch(`/notes`)
             .withHeaders('Authorization', `Bearer $S{${STORES_ACCESS_TOKEN}}`)
-            .withPathParams('id', `$S{${STORES_NOTE_ID}}`)
+            .withQueryParams({ noteId: `$S{${STORES_NOTE_ID}}` })
             .withBody(testUpdateNote)
-            .expectStatus(200)
+            .expectStatus(HttpStatus.OK)
             .expectJsonMatch({ ...testUpdateNote });
         });
         it('should throw an error if an unknown note id is provided', async () => {
           const randomHex: string = randomBytes(12).toString('hex');
           return pactum
             .spec()
-            .patch(`/notes/${randomHex}`)
+            .patch(`/notes`)
             .withHeaders('Authorization', `Bearer $S{${STORES_ACCESS_TOKEN}}`)
+            .withQueryParams({ noteId: `${randomHex}` })
             .withBody(testUpdateNote)
-            .expectStatus(403);
+            .expectStatus(HttpStatus.FORBIDDEN);
         });
       });
       describe('Delete note by id', () => {
         it('should delete note by id', async () => {
           return pactum
             .spec()
-            .delete(`/notes/{id}`)
+            .delete(`/notes`)
             .withHeaders('Authorization', `Bearer $S{${STORES_ACCESS_TOKEN}}`)
-            .withPathParams('id', `$S{${STORES_NOTE_ID}}`)
-            .expectStatus(204);
+            .withQueryParams({ noteId: `$S{${STORES_NOTE_ID}}` })
+            .expectStatus(HttpStatus.NO_CONTENT);
         });
         it('should get empty notes', async () => {
           return pactum
             .spec()
             .get('/notes')
             .withHeaders('Authorization', `Bearer $S{${STORES_ACCESS_TOKEN}}`)
-            .expectStatus(200)
+            .expectStatus(HttpStatus.OK)
             .expectBody([])
             .expectJsonLength(0);
         });
