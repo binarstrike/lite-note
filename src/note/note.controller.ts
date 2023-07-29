@@ -5,12 +5,11 @@ import {
   Get,
   HttpCode,
   HttpStatus,
-  Param,
   Patch,
   Post,
 } from '@nestjs/common';
 import { NoteService } from './note.service';
-import { GetUser } from '../common/decorators';
+import { GetQueryParams, GetUser } from '../common/decorators';
 import { CreateNoteDto, UpdateNoteDto } from './dto';
 
 @Controller('notes')
@@ -18,8 +17,11 @@ export class NoteController {
   constructor(private noteService: NoteService) {}
 
   @Get()
-  getNotes(@GetUser('id') userId: string) {
-    return this.noteService.getNotes(userId);
+  fetchNotes(
+    @GetUser('id') userId: string,
+    @GetQueryParams('noteId') noteId: string,
+  ) {
+    return this.noteService.getNotesOneOrMore(userId, noteId);
   }
 
   @Post()
@@ -27,26 +29,21 @@ export class NoteController {
     return this.noteService.createNote(userId, dto);
   }
 
-  @Get(':noteId')
-  getNoteById(@GetUser('id') userId: string, @Param('noteId') noteId: string) {
-    return this.noteService.getNoteById(userId, noteId);
-  }
-
-  @Patch(':noteId')
+  @Patch()
   updateNoteById(
     @GetUser('id') userId: string,
-    @Param('noteId') noteId: string,
+    @GetQueryParams('noteId') noteId: string,
     @Body() dto: UpdateNoteDto,
   ) {
     return this.noteService.updateNoteById(userId, noteId, dto);
   }
 
-  @Delete(':noteId')
+  @Delete()
   @HttpCode(HttpStatus.NO_CONTENT)
-  deleteNoteById(
+  async deleteNoteById(
     @GetUser('id') userId: string,
-    @Param('noteId') noteId: string,
-  ) {
-    return this.noteService.deleteNoteById(userId, noteId);
+    @GetQueryParams('noteId') noteId: string,
+  ): Promise<void> {
+    await this.noteService.deleteNoteById(userId, noteId);
   }
 }

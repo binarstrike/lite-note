@@ -1,41 +1,37 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateNoteDto, UpdateNoteDto } from './dto';
-import { Note } from '@prisma/client';
-import { ExcludePropWithType } from '../helpers';
-
-const selectedNoteFields: ExcludePropWithType<Note, 'userId', boolean> = {
-  id: true,
-  title: true,
-  description: true,
-  createdAt: true,
-  updatedAt: true,
-};
+import { PrismaSelectNoteFieldsType, prismaSelectNoteFields } from '../types';
 
 @Injectable()
 export class NoteService {
   constructor(private prisma: PrismaService) {}
 
-  async getNotes(userId: string) {
+  async getNotesOneOrMore(
+    userId: string,
+    noteId?: string,
+  ): Promise<PrismaSelectNoteFieldsType | PrismaSelectNoteFieldsType[] | null> {
+    if (noteId) {
+      const note = await this.prisma.note.findFirst({
+        where: { userId, id: noteId },
+        select: prismaSelectNoteFields,
+      });
+      return note;
+    }
     const notes = await this.prisma.note.findMany({
       where: { userId },
-      select: selectedNoteFields,
+      select: prismaSelectNoteFields,
     });
     return notes;
   }
 
-  async createNote(userId: string, dto: CreateNoteDto) {
+  async createNote(
+    userId: string,
+    dto: CreateNoteDto,
+  ): Promise<PrismaSelectNoteFieldsType> {
     const note = await this.prisma.note.create({
       data: { userId, ...dto },
-      select: selectedNoteFields,
-    });
-    return note;
-  }
-
-  async getNoteById(userId: string, noteId: string) {
-    const note = await this.prisma.note.findFirst({
-      where: { userId, id: noteId },
-      select: selectedNoteFields,
+      select: prismaSelectNoteFields,
     });
     return note;
   }
@@ -48,13 +44,15 @@ export class NoteService {
     if (!note || note.userId !== userId)
       throw new ForbiddenException('Access to resources denied');
 
-    return this.prisma.note.update({
+    const updateNote = await this.prisma.note.update({
       where: { id: noteId },
       data: { ...dto },
     });
+
+    return updateNote;
   }
 
-  async deleteNoteById(userId: string, noteId: string) {
+  async deleteNoteById(userId: string, noteId: string): Promise<void> {
     const note = await this.prisma.note.findUnique({
       where: { id: noteId },
     });
@@ -65,7 +63,6 @@ export class NoteService {
     const deleteNote = await this.prisma.note.delete({
       where: { id: noteId },
     });
-
-    return deleteNote;
+    if (!deleteNote) throw new ForbiddenException();
   }
 }
