@@ -2,6 +2,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { CreateUserDto, UserLoginDto } from './dto';
@@ -53,13 +54,13 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new ForbiddenException('User not found');
+      throw new NotFoundException('User not found');
     }
 
     const comparePassword = await argon.verify(user.hash, dto.password);
 
     if (!comparePassword) {
-      throw new ForbiddenException('Wrong Credentials');
+      throw new UnauthorizedException('Wrong Credentials');
     }
 
     const tokens = await this.signToken(user.id);
@@ -109,7 +110,7 @@ export class AuthService {
     const [accessToken, refreshToken] = await Promise.all([
       this.jwt.signAsync(
         { sub: userId },
-        { secret: this.config.get<string>('JWT_SECRET'), expiresIn: '1m' }, // 15m
+        { secret: this.config.get<string>('JWT_SECRET'), expiresIn: '15m' }, // 15m
       ),
       this.jwt.signAsync(
         { sub: userId },
