@@ -1,15 +1,9 @@
-import {
-  Body,
-  Controller,
-  HttpCode,
-  HttpStatus,
-  Post,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateUserDto, UserLoginDto } from './dto';
 import { GetUser, Public } from '../common/decorators';
 import { JwtRefreshGuard } from '../common/guards';
+import { Tokens } from '../types';
 
 @Controller('auth') //* /auth
 export class AuthController {
@@ -17,20 +11,20 @@ export class AuthController {
 
   @Public()
   @Post('signup') //* /auth/signup
-  signup(@Body() dto: CreateUserDto) {
+  signup(@Body() dto: CreateUserDto): Promise<Tokens> {
     return this.authService.signup(dto);
   }
 
   @Public()
   @HttpCode(HttpStatus.OK) //* set status kode menjadi 200 OK
   @Post('signin') //* /auth/signin
-  signin(@Body() dto: UserLoginDto) {
+  signin(@Body() dto: UserLoginDto): Promise<Tokens> {
     return this.authService.signin(dto);
   }
 
   @HttpCode(HttpStatus.OK)
   @Post('logout') //* /auth/logout
-  logout(@GetUser('id') userId: any) {
+  logout(@GetUser('id') userId: string): Promise<string> {
     return this.authService.logout(userId);
   }
 
@@ -41,7 +35,7 @@ export class AuthController {
   refreshToken(
     @GetUser('id') userId: string,
     @GetUser('refreshToken') refreshToken: string,
-  ) {
+  ): Promise<Tokens> {
     return this.authService.refreshTokens(userId, refreshToken);
   }
 }
