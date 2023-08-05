@@ -22,10 +22,7 @@ const selectedUserFields: ExcludePropWithType<UserWithoutHashAndEmail, 'refreshT
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   //* karena class Strategy dari berasal dari package passport-jwt maka
   //* parameter kedua dari fungsi PassportStrategy diatas secara default adalah jwt
-  constructor(
-    config: ConfigService<EnvConfigType, true>,
-    private prisma: PrismaService,
-  ) {
+  constructor(config: ConfigService<EnvConfigType, true>, private prisma: PrismaService) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,

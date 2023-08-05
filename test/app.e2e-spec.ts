@@ -94,10 +94,7 @@ describe('App e2e', () => {
           .expectStatus(HttpStatus.BAD_REQUEST);
       });
       it('should throw if no body provided', async () => {
-        return pactum
-          .spec()
-          .post('/auth/signup')
-          .expectStatus(HttpStatus.BAD_REQUEST);
+        return pactum.spec().post('/auth/signup').expectStatus(HttpStatus.BAD_REQUEST);
       });
     });
     describe('POST /auth/signin', () => {
@@ -128,10 +125,7 @@ describe('App e2e', () => {
           .expectStatus(HttpStatus.BAD_REQUEST);
       });
       it('should throw if no body provided', async () => {
-        return pactum
-          .spec()
-          .post('/auth/signin')
-          .expectStatus(HttpStatus.BAD_REQUEST);
+        return pactum.spec().post('/auth/signin').expectStatus(HttpStatus.BAD_REQUEST);
       });
     });
     describe('POST /auth/refresh', () => {
@@ -170,13 +164,9 @@ describe('App e2e', () => {
           .expectStatus(HttpStatus.OK);
       });
       it('should throw unauthorized response', async () => {
-        return pactum
-          .spec()
-          .get('/users/me')
-          .expectStatus(HttpStatus.UNAUTHORIZED)
-          .expectJsonMatch({
-            message: 'Unauthorized',
-          });
+        return pactum.spec().get('/users/me').expectStatus(HttpStatus.UNAUTHORIZED).expectJsonMatch({
+          message: 'Unauthorized',
+        });
       });
       it('should edit user', async () => {
         return pactum
