@@ -7,10 +7,7 @@ import { ForbiddenException, Injectable } from '@nestjs/common';
 import { JwtPayload, ValidatedJwtPayloadWithRt } from '../../types';
 
 @Injectable()
-export class RefreshJwtStrategy extends PassportStrategy(
-  Strategy,
-  'jwt-refresh',
-) {
+export class RefreshJwtStrategy extends PassportStrategy(Strategy, 'jwt-refresh') {
   constructor(config: ConfigService<EnvConfigType, true>) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),

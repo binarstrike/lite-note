@@ -22,9 +22,6 @@ const EnvConfigSchema = z.object({
     .default('3000'),
 });
 
-export const EnvParsedConfig = validateObjectWithZod(
-  EnvConfigSchema,
-  process.env,
-);
+export const EnvParsedConfig = validateObjectWithZod(EnvConfigSchema, process.env);
 
 export type EnvConfigType = typeof EnvParsedConfig;

@@ -9,11 +9,7 @@ import { ExcludePropWithType } from '../../helpers';
 import { User } from '@prisma/client';
 import { UserWithoutHashAndEmail } from '../../types';
 
-const selectedUserFields: ExcludePropWithType<
-  UserWithoutHashAndEmail,
-  'refreshToken',
-  boolean
-> = {
+const selectedUserFields: ExcludePropWithType<UserWithoutHashAndEmail, 'refreshToken', boolean> = {
   id: true,
   username: true,
   firstname: true,
@@ -37,9 +33,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     });
   }
 
-  async validate(
-    payload: JwtPayload,
-  ): Promise<{ [K in keyof typeof selectedUserFields]: User[K] }> {
+  async validate(payload: JwtPayload): Promise<{ [K in keyof typeof selectedUserFields]: User[K] }> {
     const user = await this.prisma.user.findUnique({
       where: {
         id: payload.sub,

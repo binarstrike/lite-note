@@ -1,13 +1,4 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  HttpCode,
-  HttpStatus,
-  Patch,
-  Post,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Patch, Post } from '@nestjs/common';
 import { NoteService } from './note.service';
 import { GetQueryParams, GetUser } from '../common/decorators';
 import { CreateNoteDto, UpdateNoteDto } from './dto';
@@ -17,10 +8,7 @@ export class NoteController {
   constructor(private noteService: NoteService) {}
 
   @Get()
-  fetchNotes(
-    @GetUser('id') userId: string,
-    @GetQueryParams('noteId') noteId: string,
-  ) {
+  fetchNotes(@GetUser('id') userId: string, @GetQueryParams('noteId') noteId: string) {
     return this.noteService.getNotesOneOrMore(userId, noteId);
   }
 

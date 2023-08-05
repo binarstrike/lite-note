@@ -92,8 +92,7 @@ export class AuthService {
       where: { id: userId },
     });
 
-    if (!user || !user.refreshToken)
-      throw new ForbiddenException('User not found or invalid');
+    if (!user || !user.refreshToken) throw new ForbiddenException('User not found or invalid');
 
     const tokenMatches = await argon.verify(user.refreshToken, refreshToken);
 
@@ -126,10 +125,7 @@ export class AuthService {
     };
   }
 
-  private async updateRefreshToken(
-    userId: string,
-    refreshToken: string,
-  ): Promise<void> {
+  private async updateRefreshToken(userId: string, refreshToken: string): Promise<void> {
     const hashedRefreshToken = await this.hashMe(refreshToken);
     await this.prisma.user.update({
       where: { id: userId },

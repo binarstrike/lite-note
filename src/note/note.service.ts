@@ -25,10 +25,7 @@ export class NoteService {
     return notes;
   }
 
-  async createNote(
-    userId: string,
-    dto: CreateNoteDto,
-  ): Promise<PrismaSelectNoteFieldsType> {
+  async createNote(userId: string, dto: CreateNoteDto): Promise<PrismaSelectNoteFieldsType> {
     const note = await this.prisma.note.create({
       data: { userId, ...dto },
       select: prismaSelectNoteFields,
@@ -41,8 +38,7 @@ export class NoteService {
       where: { id: noteId },
     });
 
-    if (!note || note.userId !== userId)
-      throw new ForbiddenException('Access to resources denied');
+    if (!note || note.userId !== userId) throw new ForbiddenException('Access to resources denied');
 
     const updateNote = await this.prisma.note.update({
       where: { id: noteId },
@@ -57,8 +53,7 @@ export class NoteService {
       where: { id: noteId },
     });
 
-    if (!note || note.userId !== userId)
-      throw new ForbiddenException('Access to resources denied');
+    if (!note || note.userId !== userId) throw new ForbiddenException('Access to resources denied');
 
     const deleteNote = await this.prisma.note.delete({
       where: { id: noteId },
