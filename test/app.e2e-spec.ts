@@ -11,6 +11,8 @@ import * as pactum from 'pactum';
 import { ExcludeProp } from '../src/helpers';
 import { Note } from '@prisma/client';
 
+type TokenKeys = keyof Tokens;
+
 describe('App e2e', () => {
   let app: INestApplication, prisma: PrismaService;
   const TEST_SERVER_PORT = 5000,
@@ -69,28 +71,28 @@ describe('App e2e', () => {
         return pactum
           .spec()
           .post('/auth/signup')
-          .withBody({ ...testUserSignUp, email: '' } as CreateUserDto)
+          .withBody({ ...testUserSignUp, email: '' } satisfies CreateUserDto)
           .expectStatus(HttpStatus.BAD_REQUEST);
       });
       it('should throw if name empty', async () => {
         return pactum
           .spec()
           .post('/auth/signup')
-          .withBody({ ...testUserSignUp, username: '' } as CreateUserDto)
+          .withBody({ ...testUserSignUp, username: '' } satisfies CreateUserDto)
           .expectStatus(HttpStatus.BAD_REQUEST);
       });
       it('should throw if password empty', async () => {
         return pactum
           .spec()
           .post('/auth/signup')
-          .withBody({ ...testUserSignUp, password: '' } as CreateUserDto)
+          .withBody({ ...testUserSignUp, password: '' } satisfies CreateUserDto)
           .expectStatus(HttpStatus.BAD_REQUEST);
       });
       it('should throw if firstname empty', async () => {
         return pactum
           .spec()
           .post('/auth/signup')
-          .withBody({ ...testUserSignUp, firstname: '' } as CreateUserDto)
+          .withBody({ ...testUserSignUp, firstname: '' } satisfies CreateUserDto)
           .expectStatus(HttpStatus.BAD_REQUEST);
       });
       it('should throw if no body provided', async () => {
@@ -106,22 +108,22 @@ describe('App e2e', () => {
           .expectJsonLike(expectedAuthTokensJsonResponse)
           .expectStatus(HttpStatus.OK)
           .stores((_, res) => ({
-            [STORES_ACCESS_TOKEN]: res.body['accessToken' as keyof Tokens],
-            [STORES_REFRESH_TOKEN]: res.body['refreshToken' as keyof Tokens],
+            [STORES_ACCESS_TOKEN]: res.body['accessToken' satisfies TokenKeys],
+            [STORES_REFRESH_TOKEN]: res.body['refreshToken' satisfies TokenKeys],
           }));
       });
       it('should throw if email empty', async () => {
         return pactum
           .spec()
           .post('/auth/signin')
-          .withBody({ ...testUserSignUp, email: '' } as UserLoginDto)
+          .withBody({ ...testUserSignUp, email: '' } satisfies UserLoginDto)
           .expectStatus(HttpStatus.BAD_REQUEST);
       });
       it('should throw if password empty', async () => {
         return pactum
           .spec()
           .post('/auth/signin')
-          .withBody({ ...testUserSignUp, password: '' } as UserLoginDto)
+          .withBody({ ...testUserSignUp, password: '' } satisfies UserLoginDto)
           .expectStatus(HttpStatus.BAD_REQUEST);
       });
       it('should throw if no body provided', async () => {
@@ -137,7 +139,7 @@ describe('App e2e', () => {
           .expectJsonLike(expectedAuthTokensJsonResponse)
           .expectStatus(HttpStatus.OK)
           .stores((_, res) => ({
-            [STORES_REFRESH_TOKEN]: res.body['refreshToken' as keyof Tokens],
+            [STORES_REFRESH_TOKEN]: res.body['refreshToken' satisfies TokenKeys],
           }));
       });
       it('should throw if wrong token is provided', async () => {
@@ -212,7 +214,7 @@ describe('App e2e', () => {
             .expectStatus(HttpStatus.CREATED)
             .expectJsonMatch({ ...testCreateNote })
             .stores((_, res) => ({
-              [STORES_NOTE_ID]: res.body['id' as keyof NoteWithoutUserId],
+              [STORES_NOTE_ID]: res.body['id' satisfies keyof NoteWithoutUserId],
             }));
           //* menyimpan nilai id note pada variabel noteId
         });
