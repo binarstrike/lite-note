@@ -12,6 +12,7 @@ const EnvConfigSchema = z.object({
   JWT_REFRESH_SECRET: z.string(),
   COOKIE_SECRET: z.string(),
   NODE_ENV: z.enum(nodeEnv),
+  DEFAULT_API_VERSION: z.string(),
   CORS_ORIGINS: z
     .string()
     .transform((origin) => origin.split(','))
