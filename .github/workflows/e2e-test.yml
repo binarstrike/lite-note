@@ -5,7 +5,7 @@ on:
 
 jobs:
   e2e-test:
-    name: Test Application
+    name: API end to end test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -23,7 +23,9 @@ jobs:
           run_install: false
       
       - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+        run: >
+          pnpm config set auto-install-peers true &&
+          pnpm install --frozen-lockfile
     
       - name:  End to end test
         run: pnpm test:e2e
