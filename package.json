@@ -27,8 +27,10 @@
     "db:up:test": "docker compose --env-file .env.test up test_db -d",
     "db:remove:test": "docker compose --env-file .env.test rm test_db -s -f -v",
     "db:restart:test": "pnpm db:remove:test && pnpm db:up:test && timeout 10 || sleep 10 && pnpm prisma:push:test",
+    "pretest:e2e:watch": "pnpm db:restart:test",
     "pretest:e2e": "pnpm db:restart:test",
-    "test:e2e": "dotenv -e .env.test -- jest --watch --config ./test/jest-e2e.json"
+    "test:e2e:watch": "dotenv -e .env.test -- jest --watch --config ./test/jest-e2e.json",
+    "test:e2e": "dotenv -e .env.test -- jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
     "@nestjs/common": "^10.0.0",
