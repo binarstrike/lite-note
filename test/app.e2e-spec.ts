@@ -4,18 +4,20 @@ import { PrismaService } from '../src/prisma/prisma.service';
 import { CreateUserDto, UserLoginDto } from '../src/auth/dto';
 import { UpdateUserDto } from '../src/user/user.dto';
 import { Tokens } from '../src/types';
-import { HttpStatus, INestApplication, ValidationPipe } from '@nestjs/common';
+import { HttpStatus, INestApplication, ValidationPipe, VersioningType } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { randomBytes } from 'crypto';
 import * as pactum from 'pactum';
 import { ExcludeProp } from '../src/helpers';
 import { Note } from '@prisma/client';
+import { EnvParsedConfig as config } from '../src/config';
 
 type TokenKeys = keyof Tokens;
 
-describe('App e2e', () => {
+describe('End to end test', () => {
   let app: INestApplication, prisma: PrismaService;
-  const TEST_SERVER_PORT = 5000,
+  const TEST_SERVER_PORT = config.SERVER_PORT,
+    API_VERSION = config.DEFAULT_API_VERSION,
     STORES_ACCESS_TOKEN = 'userAt',
     STORES_REFRESH_TOKEN = 'userRt';
 
@@ -23,22 +25,25 @@ describe('App e2e', () => {
     const moduleRef = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
+
     app = moduleRef.createNestApplication();
     app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
+    app.enableVersioning({ type: VersioningType.URI, defaultVersion: API_VERSION });
+
     await app.init();
     await app.listen(TEST_SERVER_PORT);
 
     prisma = app.get(PrismaService);
     await prisma.cleanDb();
 
-    pactum.request.setBaseUrl(`http://localhost:${TEST_SERVER_PORT}`);
+    pactum.request.setBaseUrl(`http://localhost:${TEST_SERVER_PORT}/v${API_VERSION}`);
   });
 
   afterAll(() => {
     app.close();
   });
 
-  describe('Endpoint /auth', () => {
+  describe('Authentication and Authorization', () => {
     const testUserSignUp: CreateUserDto = {
       username: 'rikka12',
       firstname: 'Rikka',
@@ -58,7 +63,7 @@ describe('App e2e', () => {
       refreshToken: jwtRegex,
     };
 
-    describe('POST /auth/signup', () => {
+    describe('Signup User', () => {
       it('should signup', async () => {
         return pactum
           .spec()
@@ -99,7 +104,7 @@ describe('App e2e', () => {
         return pactum.spec().post('/auth/signup').expectStatus(HttpStatus.BAD_REQUEST);
       });
     });
-    describe('POST /auth/signin', () => {
+    describe('Signin User', () => {
       it('should signin', async () => {
         return await pactum
           .spec()
@@ -130,7 +135,7 @@ describe('App e2e', () => {
         return pactum.spec().post('/auth/signin').expectStatus(HttpStatus.BAD_REQUEST);
       });
     });
-    describe('POST /auth/refresh', () => {
+    describe('Refresh auth tokens', () => {
       it('should refresh the tokens and return valid json object', async () => {
         return pactum
           .spec()
@@ -151,13 +156,13 @@ describe('App e2e', () => {
       });
     });
   });
-  describe('Endpoint /users', () => {
+  describe('User endpoint', () => {
     const testUpdateUser: UpdateUserDto = {
       username: 'chita23',
       firstname: 'Eru',
       lastname: 'Chitanda',
     };
-    describe('GET,PATCH /users', () => {
+    describe('Fetch user info', () => {
       it('should get current user', async () => {
         return pactum
           .spec()
@@ -170,7 +175,7 @@ describe('App e2e', () => {
           message: 'Unauthorized',
         });
       });
-      it('should edit user', async () => {
+      it('Edit user info', async () => {
         return pactum
           .spec()
           .patch('/users')
@@ -180,7 +185,7 @@ describe('App e2e', () => {
       });
     });
   });
-  describe('Endpoint /notes', () => {
+  describe('Notes endpoint', () => {
     const testCreateNote: CreateNoteDto = {
       title: 'Foo',
       description: 'Foo Bar',
@@ -192,7 +197,7 @@ describe('App e2e', () => {
     const STORES_NOTE_ID = 'noteId';
     type NoteWithoutUserId = ExcludeProp<Note, 'userId'>;
 
-    describe('GET,POST,PATCH,DELETE /notes', () => {
+    describe('Notes CRUD', () => {
       describe('Get empty notes', () => {
         it('should get empty notes', async () => {
           return pactum
