@@ -19,5 +19,12 @@
     "editor.formatOnType": false,
     "editor.tabSize": 2,
     "files.eol": "\n"
+  },
+  "[yaml]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.insertSpaces": true,
+    "editor.tabSize": 2,
+    "editor.autoIndent": "advanced",
+    "diffEditor.ignoreTrimWhitespace": false
   }
 }
