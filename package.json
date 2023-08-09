@@ -1,10 +1,10 @@
 {
-  "name": "notes-app-nestjs",
+  "name": "lite-note",
   "version": "0.0.1",
-  "description": "Just a small notes app",
+  "description": "Cuma aplikasi untuk mencatat yang sederhana",
   "author": "Binar Nugroho <binarnugroho775@gmail.com>",
-  "private": true,
-  "repository": "https://github.com/binarstrike/notes-app-nestjs.git",
+  "private": false,
+  "repository": "https://github.com/binarstrike/lite-note.git",
   "license": "UNLICENSED",
   "scripts": {
     "build": "nest build",
