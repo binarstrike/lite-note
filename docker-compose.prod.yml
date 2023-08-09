@@ -1,0 +1,22 @@
+version: '3'
+
+services:
+  main:
+    image: node:18-slim
+    container_name: lite-note
+    build: .
+    env_file:
+      - .env
+    expose:
+      - ${SERVER_PORT}
+    ports:
+      - target: ${SERVER_PORT}
+        published: 65534
+        protocol: tcp
+        mode: host
+    healthcheck:
+      test: wget http://main:${SERVER_PORT} --spider --tries=1 -nv || exit 1
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
