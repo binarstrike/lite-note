@@ -22,10 +22,10 @@ export class AuthController {
     return this.authService.signin(dto);
   }
 
-  @HttpCode(HttpStatus.OK)
+  @HttpCode(HttpStatus.NO_CONTENT)
   @Post('logout') //* /auth/logout
-  logout(@GetUser('id') userId: string): Promise<string> {
-    return this.authService.logout(userId);
+  logout(@GetUser('id') userId: string): void {
+    this.authService.logout(userId);
   }
 
   @Public()

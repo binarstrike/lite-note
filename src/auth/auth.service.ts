@@ -69,21 +69,20 @@ export class AuthService {
   }
 
   //* /auth/logout POST handler
-  async logout(userId: string): Promise<string> {
+  async logout(userId: string): Promise<void> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: { refreshToken: true },
     });
-    if (!user?.refreshToken)
-      throw new UnauthorizedException(
-        'User already logged out',
-        'You are already logged out. Please log in to continue.',
-      );
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: { refreshToken: null },
-    });
-    return 'success';
+    if (!user?.refreshToken) throw new UnauthorizedException();
+    try {
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { refreshToken: null },
+      });
+    } catch (_) {
+      throw new ForbiddenException();
+    }
   }
 
   //* /auth/refresh POST handler
