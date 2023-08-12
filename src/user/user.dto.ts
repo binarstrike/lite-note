@@ -11,5 +11,5 @@ export class UpdateUserDto {
 
   @IsString()
   @IsOptional()
-  lastname?: string;
+  lastname?: string | null;
 }

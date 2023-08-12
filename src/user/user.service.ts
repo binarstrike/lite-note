@@ -5,13 +5,16 @@ import { PrismaService } from '../prisma/prisma.service';
 @Injectable()
 export class UserService {
   constructor(private prisma: PrismaService) {}
-  async editUser(userId: string, dto: UpdateUserDto): Promise<{ [key: string]: any }> {
+  async editUser(userId: string, dto: UpdateUserDto): Promise<UpdateUserDto> {
     try {
-      await this.prisma.user.update({
+      const userEdit = await this.prisma.user.update({
         where: { id: userId },
         data: { ...dto },
+        select: { username: true, firstname: true, lastname: true } satisfies {
+          [K in keyof UpdateUserDto]: boolean;
+        },
       });
-      return { message: 'success' };
+      return userEdit;
     } catch (_) {
       throw new ForbiddenException();
     }

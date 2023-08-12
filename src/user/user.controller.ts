@@ -13,7 +13,7 @@ export class UserController {
   }
 
   @Patch()
-  updateUser(@GetUser('id') userId: string, @Body() dto: UpdateUserDto): Promise<{ [key: string]: any }> {
+  updateUser(@GetUser('id') userId: string, @Body() dto: UpdateUserDto): Promise<UpdateUserDto> {
     return this.userService.editUser(userId, dto);
   }
 }
