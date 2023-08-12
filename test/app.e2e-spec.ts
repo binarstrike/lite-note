@@ -9,7 +9,7 @@ import { Test } from '@nestjs/testing';
 import { randomBytes } from 'crypto';
 import * as pactum from 'pactum';
 import { ExcludeProp } from '../src/helpers';
-import { Note } from '@prisma/client';
+import { Note, User } from '@prisma/client';
 import { EnvParsedConfig as config } from '../src/config';
 
 type TokenKeys = keyof Tokens;
@@ -43,14 +43,15 @@ describe('End to end test', () => {
     app.close();
   });
 
+  const testUserSignUp: CreateUserDto = {
+    username: 'rikka12',
+    firstname: 'Rikka',
+    lastname: 'Takanashi',
+    email: 'example01@xyz.com',
+    password: 'foo bar',
+  };
+
   describe('Authentication and Authorization', () => {
-    const testUserSignUp: CreateUserDto = {
-      username: 'rikka12',
-      firstname: 'Rikka',
-      lastname: 'Takanashi',
-      email: 'example01@xyz.com',
-      password: 'foo bar',
-    };
     const testUserSignIn: UserLoginDto = {
       email: testUserSignUp.email,
       password: testUserSignUp.password,
@@ -168,12 +169,15 @@ describe('End to end test', () => {
           .spec()
           .get('/users/me')
           .withHeaders('Authorization', `Bearer $S{${STORES_ACCESS_TOKEN}}`) //* parameter bisa berbentuk object
+          .expectJsonLike({
+            username: testUserSignUp.username,
+            firstname: testUserSignUp.firstname,
+            lastname: testUserSignUp.lastname,
+          } satisfies Partial<User>)
           .expectStatus(HttpStatus.OK);
       });
-      it('should throw unauthorized response', async () => {
-        return pactum.spec().get('/users/me').expectStatus(HttpStatus.UNAUTHORIZED).expectJsonMatch({
-          message: 'Unauthorized',
-        });
+      it('should throw unauthorized if no auth token is provided', async () => {
+        return pactum.spec().get('/users/me').expectStatus(HttpStatus.UNAUTHORIZED);
       });
       it('Edit user info', async () => {
         return pactum
@@ -181,6 +185,7 @@ describe('End to end test', () => {
           .patch('/users')
           .withHeaders('Authorization', `Bearer $S{${STORES_ACCESS_TOKEN}}`)
           .withBody(testUpdateUser)
+          .expectJsonMatchStrict(testUpdateUser)
           .expectStatus(HttpStatus.OK);
       });
     });
@@ -259,7 +264,7 @@ describe('End to end test', () => {
             .expectStatus(HttpStatus.OK)
             .expectJsonMatch({ ...testUpdateNote });
         });
-        it('should throw an error if an unknown note id is provided', async () => {
+        it('should response not found if an unknown note id is provided', async () => {
           const randomHex: string = randomBytes(12).toString('hex');
           return pactum
             .spec()
@@ -267,7 +272,7 @@ describe('End to end test', () => {
             .withHeaders('Authorization', `Bearer $S{${STORES_ACCESS_TOKEN}}`)
             .withQueryParams({ noteId: `${randomHex}` })
             .withBody(testUpdateNote)
-            .expectStatus(HttpStatus.FORBIDDEN);
+            .expectStatus(HttpStatus.NOT_FOUND);
         });
       });
       describe('Delete note by id', () => {

@@ -9,7 +9,7 @@ export class NoteController {
 
   @Get()
   fetchNotes(@GetUser('id') userId: string, @GetQueryParams('noteId') noteId: string) {
-    return this.noteService.getNotesOneOrMore(userId, noteId);
+    return this.noteService.getNotes(userId, noteId);
   }
 
   @Post()

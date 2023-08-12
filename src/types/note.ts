@@ -7,7 +7,7 @@ export type NoteParamsEndpoint = {
 
 export type PrismaSelectNoteFieldsType = ExcludeProp<Note, 'userId'>;
 
-export const prismaSelectNoteFields: Record<keyof PrismaSelectNoteFieldsType, boolean> = {
+export const prismaSelectNoteFields: Readonly<Record<keyof PrismaSelectNoteFieldsType, boolean>> = {
   id: true,
   title: true,
   description: true,
