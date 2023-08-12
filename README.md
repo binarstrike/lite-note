@@ -5,3 +5,4 @@ Sebuah aplikasi backend simpel dengan fungsi mencatat sebuah catatan yang terdir
 - [] Membuat unit test atau integration test
 - [] Implementasi JWT dengan cookie
 - [] Meningkatkan keamanan aplikasi
+- [] Implementasi Logging
