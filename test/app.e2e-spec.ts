@@ -11,8 +11,12 @@ import * as pactum from 'pactum';
 import { ExcludeProp } from '../src/helpers';
 import { Note, User } from '@prisma/client';
 import { EnvParsedConfig as config } from '../src/config';
+import { z } from 'zod';
 
 type TokenKeys = keyof Tokens;
+const tokensSchema = z.object({ accessToken: z.string(), refreshToken: z.string() } satisfies {
+  [K in TokenKeys]: z.ZodString;
+});
 
 describe('End to end test', () => {
   let app: INestApplication, prisma: PrismaService;
@@ -57,20 +61,13 @@ describe('End to end test', () => {
       password: testUserSignUp.password,
     };
 
-    const jwtRegex = /^[A-Za-z0-9_-]{2,}(?:\.[A-Za-z0-9_-]{2,}){2}$/;
-
-    const expectedAuthTokensJsonResponse: { [K in keyof Tokens]: RegExp } = {
-      accessToken: jwtRegex,
-      refreshToken: jwtRegex,
-    };
-
-    describe('Signup User', () => {
-      it('should signup', async () => {
+    describe('User Signup', () => {
+      it('should create new user', async () => {
         return pactum
           .spec()
           .post('/auth/signup')
           .withBody(testUserSignUp)
-          .expectJsonLike(expectedAuthTokensJsonResponse)
+          .expect(({ res }) => tokensSchema.parse(res.json))
           .expectStatus(HttpStatus.CREATED);
       });
       it('should throw if email empty', async () => {
@@ -105,13 +102,13 @@ describe('End to end test', () => {
         return pactum.spec().post('/auth/signup').expectStatus(HttpStatus.BAD_REQUEST);
       });
     });
-    describe('Signin User', () => {
+    describe('User Signin', () => {
       it('should signin', async () => {
         return await pactum
           .spec()
           .post('/auth/signin')
           .withBody(testUserSignIn)
-          .expectJsonLike(expectedAuthTokensJsonResponse)
+          .expect(({ res }) => tokensSchema.parse(res.json))
           .expectStatus(HttpStatus.OK)
           .stores((_, res) => ({
             [STORES_ACCESS_TOKEN]: res.body['accessToken' satisfies TokenKeys],
@@ -142,7 +139,7 @@ describe('End to end test', () => {
           .spec()
           .post('/auth/refresh')
           .withHeaders('Authorization', `Bearer $S{${STORES_REFRESH_TOKEN}}`)
-          .expectJsonLike(expectedAuthTokensJsonResponse)
+          .expect(({ res }) => tokensSchema.parse(res.json))
           .expectStatus(HttpStatus.OK)
           .stores((_, res) => ({
             [STORES_REFRESH_TOKEN]: res.body['refreshToken' satisfies TokenKeys],
@@ -154,6 +151,27 @@ describe('End to end test', () => {
           .post('/auth/refresh')
           .withHeaders('Authorization', `Bearer $S{${STORES_ACCESS_TOKEN}}`)
           .expectStatus(HttpStatus.UNAUTHORIZED);
+      });
+    });
+    describe('User Logout', () => {
+      it('should logout the user', async () => {
+        return pactum
+          .spec()
+          .post('/auth/logout')
+          .withHeaders('Authorization', `Bearer $S{${STORES_ACCESS_TOKEN}}`)
+          .expectStatus(HttpStatus.NO_CONTENT);
+      });
+      it('should signin the user', async () => {
+        return pactum
+          .spec()
+          .post('/auth/signin')
+          .withBody(testUserSignIn)
+          .expect(({ res }) => tokensSchema.parse(res.json))
+          .expectStatus(HttpStatus.OK)
+          .stores((_, res) => ({
+            [STORES_ACCESS_TOKEN]: res.body['accessToken' satisfies TokenKeys],
+            [STORES_REFRESH_TOKEN]: res.body['refreshToken' satisfies TokenKeys],
+          }));
       });
     });
   });
@@ -222,7 +240,7 @@ describe('End to end test', () => {
             .withHeaders('Authorization', `Bearer $S{${STORES_ACCESS_TOKEN}}`)
             .withBody(testCreateNote)
             .expectStatus(HttpStatus.CREATED)
-            .expectJsonMatch({ ...testCreateNote })
+            .expectJsonMatch(testCreateNote)
             .stores((_, res) => ({
               [STORES_NOTE_ID]: res.body['id' satisfies keyof NoteWithoutUserId],
             }));
@@ -237,7 +255,7 @@ describe('End to end test', () => {
             .withHeaders('Authorization', `Bearer $S{${STORES_ACCESS_TOKEN}}`)
             .expectStatus(HttpStatus.OK)
             .expectJsonLength(1)
-            .expectJsonMatch([{ ...testCreateNote }]);
+            .expectJsonMatch([testCreateNote]);
         });
       });
       describe('Get note by id', () => {
@@ -250,7 +268,7 @@ describe('End to end test', () => {
             .withHeaders('Authorization', `Bearer $S{${STORES_ACCESS_TOKEN}}`)
             .withQueryParams({ noteId: `$S{${STORES_NOTE_ID}}` })
             .expectStatus(HttpStatus.OK)
-            .expectJsonMatch({ ...testCreateNote });
+            .expectJsonMatch(testCreateNote);
         });
       });
       describe('Update note by id', () => {
@@ -262,7 +280,7 @@ describe('End to end test', () => {
             .withQueryParams({ noteId: `$S{${STORES_NOTE_ID}}` })
             .withBody(testUpdateNote)
             .expectStatus(HttpStatus.OK)
-            .expectJsonMatch({ ...testUpdateNote });
+            .expectJsonMatch(testUpdateNote);
         });
         it('should response not found if an unknown note id is provided', async () => {
           const randomHex: string = randomBytes(12).toString('hex');
