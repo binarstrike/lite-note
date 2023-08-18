@@ -1,12 +1,21 @@
-version: '3'
+version: '3.5'
 
 services:
-  main:
-    image: node:18-slim
+  main-app:
+    image: lite-note
+    build:
+      context: .
+      dockerfile: docker/app/Dockerfile
     container_name: lite-note
-    build: .
-    env_file:
-      - .env
+    environment:
+      - DATABASE_URL=mongodb://${DB_USER}:${DB_PASSWORD}@db/liteNote?replicaSet=rs0&authSource=admin
+      - CORS_ORIGINS=${CORS_ORIGINS}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
+      - JWT_SECRET=${JWT_SECRET}
+      - COOKIE_SECRET=${COOKIE_SECRET}
+      - SERVER_PORT=${SERVER_PORT}
+      - NODE_ENV=production
+      - DEFAULT_API_VERSION=${DEFAULT_API_VERSION}
     expose:
       - ${SERVER_PORT}
     ports:
@@ -14,9 +23,38 @@ services:
         published: 65534
         protocol: tcp
         mode: host
+    networks:
+      - network_1
     healthcheck:
-      test: wget http://main:${SERVER_PORT} --spider --tries=1 -nv || exit 1
-      interval: 30s
+      test: wget http://main-app:${SERVER_PORT} --spider --tries=1 -nv || exit 1
+      interval: 1m30s
       timeout: 5s
       retries: 3
       start_period: 5s
+  
+  db:
+    image: lite-note-db
+    build:
+      context: .
+      dockerfile: docker/db/Dockerfile
+    container_name: lite-note-db
+    environment:
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_HOSTNAME=db
+    volumes:
+      - db-data:/data/db:rw
+      - db-config:/data/configdb:rw
+    networks:
+      - network_1
+
+volumes:
+  db-data:
+  db-config:
+
+networks:
+  network_1:
+    ipam:
+      driver: default
+      config:
+        - subnet: "10.10.10.0/29"

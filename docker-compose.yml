@@ -6,32 +6,34 @@ version: '3'
 
 services:
   dev_db:
-    image: mongo:6-jammy
-    container_name: dev_db
+    image: lite-note-db
+    build:
+      context: .
+      dockerfile: docker/db/Dockerfile
+    container_name: lite-note-db-dev
+    environment:
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_PORT=${DB_PORT}
+      - DB_HOSTNAME=localhost
     ports:
-      - ${DB_PORT}:${DB_PORT}
-    healthcheck:
-      test: test `
-        [ ! -f /.rs_initiated ] && mongosh --port ${DB_PORT} --eval "rs.initiate({_id:'rs0',version:1,members:[{_id:0,host:'localhost:${DB_PORT}'}]})" > /dev/null 2>&1 && touch /.rs_initiated || true && 
-        [ ! -f /.user_created ] && mongosh --port ${DB_PORT} --eval "use admin" -f create-user.js > /dev/null 2>&1 && touch /.user_created || true && 
-        echo 0 || echo 1` -eq 0
-      interval: 5s
-    command: /bin/bash -c "
-      echo \"db.createUser({user:'${DB_USER}',pwd:'${DB_PASSWORD}',roles:[]})\" > /create-user.js && 
-      /usr/local/bin/docker-entrypoint.sh mongod --replSet rs0 --bind_ip_all --port ${DB_PORT}"
-  
+      - ${DB_PORT}:${DB_PORT}/tcp
+    expose:
+      - ${DB_PORT}
+
   test_db:
-    image: mongo:6-jammy
-    container_name: test_db
+    image: lite-note-db
+    build:
+      context: .
+      dockerfile: docker/db/Dockerfile
+    container_name: lite-note-db-test
+    environment:
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_PORT=${DB_PORT}
+      - DB_HOSTNAME=localhost
     ports:
-      - ${DB_PORT}:${DB_PORT}
-    healthcheck:
-      test: test `
-        [ ! -f /.rs_initiated ] && mongosh --port ${DB_PORT} --eval "rs.initiate({_id:'rs0',version:1,members:[{_id:0,host:'localhost:${DB_PORT}'}]})" > /dev/null 2>&1 && touch /.rs_initiated || true && 
-        [ ! -f /.user_created ] && mongosh --port ${DB_PORT} --eval "use admin" -f create-user.js > /dev/null 2>&1 && touch /.user_created || true && 
-        echo 0 || echo 1` -eq 0
-      interval: 5s
-    command: >
-      /bin/bash -c "\
-      echo \"db.createUser({user:'${DB_USER}',pwd:'${DB_PASSWORD}',roles:[]})\" > /create-user.js && \
-      /usr/local/bin/docker-entrypoint.sh mongod --replSet rs0 --bind_ip_all --port ${DB_PORT}"
+      - ${DB_PORT}:${DB_PORT}/tcp
+    expose:
+      - ${DB_PORT}
+    
