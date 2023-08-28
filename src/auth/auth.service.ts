@@ -6,13 +6,13 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { CreateUserDto, UserLoginDto } from './dto';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from 'src/prisma/prisma.service';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as argon from 'argon2';
-import { EnvConfigType } from '../config';
-import { Tokens } from '../types';
+import { EnvConfigType } from 'src/config';
+import { Tokens } from 'src/types';
 
 @Injectable()
 export class AuthService {

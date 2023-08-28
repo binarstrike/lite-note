@@ -1,4 +1,4 @@
-import { validateObjectWithZod } from '../utils';
+import { validateObjectWithZod } from 'src/utils';
 import { z } from 'zod';
 import * as dotenv from 'dotenv';
 

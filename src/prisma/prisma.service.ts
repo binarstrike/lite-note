@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaClient } from '@prisma/client';
-import { EnvConfigType } from '../config';
+import { EnvConfigType } from 'src/config';
 
 @Injectable()
 export class PrismaService extends PrismaClient {
