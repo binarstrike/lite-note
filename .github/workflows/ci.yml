@@ -31,4 +31,6 @@ jobs:
     # - name: Integration test
 
       - name:  End to end test
-        run: pnpm test:e2e
+        run: >
+          pnpm db:up:test &&
+          pnpm test:e2e
