@@ -33,5 +33,5 @@ jobs:
       - name:  End to end test
         run: >
           pnpm db:up:test &&
-          sleep 10 &&
+          sleep 15 &&
           pnpm test:e2e
