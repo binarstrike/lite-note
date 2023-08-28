@@ -1,22 +1,10 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import { EnvConfigType } from '../../config';
-import { PrismaService } from '../../prisma/prisma.service';
-import { JwtPayload } from '../../types';
-import { ExcludePropWithType } from '../../helpers';
-import { User } from '@prisma/client';
-import { UserWithoutHashAndEmail } from '../../types';
-
-const selectedUserFields: ExcludePropWithType<UserWithoutHashAndEmail, 'refreshToken', boolean> = {
-  id: true,
-  username: true,
-  firstname: true,
-  lastname: true,
-  updatedAt: true,
-  createdAt: true,
-};
+import { EnvConfigType } from 'src/config';
+import { PrismaService } from 'src/prisma/prisma.service';
+import { JwtPayload, ValidatedJwtPayload } from 'src/types';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
@@ -30,14 +18,12 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     });
   }
 
-  async validate(payload: JwtPayload): Promise<{ [K in keyof typeof selectedUserFields]: User[K] }> {
-    const user = await this.prisma.user.findUnique({
-      where: {
+  validate(payload: JwtPayload): ValidatedJwtPayload {
+    if (payload.sub) {
+      return {
         id: payload.sub,
-      },
-      select: selectedUserFields,
-    });
-    if (!user) throw new ForbiddenException();
-    return user;
+      };
+    }
+    throw new UnauthorizedException();
   }
 }
