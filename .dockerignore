@@ -1,0 +1,14 @@
+.github
+.vscode
+dist
+docker
+node_modules
+test
+.env
+.env.*
+.eslintrc.js
+.gitattributes
+.gitignore
+.prettierrc
+*.yml
+*.md

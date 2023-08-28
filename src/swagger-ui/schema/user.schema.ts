@@ -1,42 +1,35 @@
-import { IsEmail, IsNotEmpty, IsOptional, IsString } from 'class-validator';
-
-export class CreateUserDto {
+export class UserInfoResponseSchema {
   /**
    * Nama pengguna yang unik
    * @example michael_ucup16
    */
-  @IsNotEmpty()
-  @IsString()
   username: string;
 
   /**
    * Mama depan pengguna
    * @example Michael
    */
-  @IsNotEmpty()
-  @IsString()
   firstname: string;
 
   /**
    * Nama belakang pengguna
    * @example Ucup
    */
-  @IsOptional()
-  @IsString()
-  lastname?: string;
+  lastname: string | null;
 
   /**
    * Email pengguna
    * @example anyemail123@xyz.com
    */
-  @IsNotEmpty()
-  @IsEmail()
   email: string;
 
   /**
-   * Kata sandi pengguna
+   * Waktu pertama kali pengguna registrasi atau dibuat
    */
-  @IsNotEmpty()
-  @IsString()
-  password: string;
+  createdAt: Date;
+
+  /**
+   * Waktu terakhir kali data atau informasi pengguna diperbarui
+   */
+  updatedAt: Date;
 }

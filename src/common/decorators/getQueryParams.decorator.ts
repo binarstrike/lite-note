@@ -1,15 +1,12 @@
 import { ExecutionContext, createParamDecorator } from '@nestjs/common';
+import { NoteQueryParamKeys } from 'src/types';
 import { Request } from 'express';
-import { NoteParamsEndpoint } from '../../types';
 
-type ParamStringKeys = keyof NoteParamsEndpoint;
+type QueryParamKeys = NoteQueryParamKeys;
 
 export const GetQueryParams = createParamDecorator(
-  (data: ParamStringKeys | undefined, ctx: ExecutionContext) => {
+  (data: QueryParamKeys | undefined, ctx: ExecutionContext) => {
     const request: Request = ctx.switchToHttp().getRequest();
-    if (data && request.query) {
-      return request.query[data];
-    }
-    return request.query;
+    return data && request.query ? request.query[data] : request.query;
   },
 );

@@ -1,16 +1,6 @@
 import { Note } from '@prisma/client';
-import { ExcludeProp } from '../helpers';
+import { ExcludeProp } from 'src/helpers';
 
-export type NoteParamsEndpoint = {
-  noteId: string;
-};
+export type NoteQueryParamKeys = 'noteId';
 
-export type PrismaSelectNoteFieldsType = ExcludeProp<Note, 'userId'>;
-
-export const prismaSelectNoteFields: Readonly<Record<keyof PrismaSelectNoteFieldsType, boolean>> = {
-  id: true,
-  title: true,
-  description: true,
-  createdAt: true,
-  updatedAt: true,
-} as const;
+export type NoteWithoutUserId = ExcludeProp<Note, 'userId'>;

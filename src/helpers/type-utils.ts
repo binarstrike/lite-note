@@ -15,3 +15,7 @@ export type ExcludePropWithType<T, U extends keyof T, V = undefined> = {
 export type ExcludeProp<T, U extends keyof T> = {
   [K in keyof T as K extends U ? never : K]: T[K];
 };
+
+export type Prettify<T> = {
+  [K in keyof T]: T[K];
+};
