@@ -20,26 +20,28 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v2
         with:
-          version: 7
+          version: 8
           run_install: false
   
       - name: Get pnpm store directory
         shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
 
       - name: Setup pnpm cache
         uses: actions/cache@v3
+        env: 
+          CACHE_KEY: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
         with:
           path: ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          key: ${{ env.CACHE_KEY }}
           restore-keys: |
-            ${{ runner.os }}-pnpm-store-
+            ${{ runner.os }}-
 
       - name: Install dependencies
         run: >
-          pnpm config set auto-install-peers true &&
-          pnpm install --frozen-lockfile
+          pnpm config set auto-install-peers true
+          && pnpm install --frozen-lockfile
+          && pnpm prisma generate
         
     # - name: Integration test
 
