@@ -22,7 +22,20 @@ jobs:
         with:
           version: 7
           run_install: false
-      
+  
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
       - name: Install dependencies
         run: >
           pnpm config set auto-install-peers true &&
@@ -33,4 +46,5 @@ jobs:
       - name:  End to end test
         run: >
           pnpm db:up:test &&
+          sleep 15 &&
           pnpm test:e2e
