@@ -42,9 +42,12 @@ jobs:
           pnpm install --frozen-lockfile
         
     # - name: Integration test
-
       - name:  End to end test
         run: >
           pnpm db:up:test &&
           sleep 15 &&
-          pnpm test:e2e
+          pnpm test:e2e --detectOpenHandles
+
+      - name: Get list of running containers
+        shell: bash
+        run: docker ps
