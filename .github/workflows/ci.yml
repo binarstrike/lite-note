@@ -45,6 +45,7 @@ jobs:
         run: >
           pnpm db:up:test
           && sleep 15
+          && docker container ls -a
           && docker ps
 
     # - name: Integration test
