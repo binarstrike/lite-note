@@ -44,9 +44,10 @@ jobs:
       - name: Start test container
         run: >
           pnpm db:up:test
-          && sleep 15
+          && sleep 10
           && docker container ls -a
-          && docker ps
+          && docker logs lite-note-db-test
+          && docker inspect lite-note-db-test
 
     # - name: Integration test
       - name:  End to end test
