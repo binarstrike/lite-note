@@ -48,6 +48,7 @@ jobs:
           && docker container ls -a
           && docker logs lite-note-db-test
           && docker inspect lite-note-db-test
+          && ls -lhA --color=auto
 
     # - name: Integration test
       - name:  End to end test
