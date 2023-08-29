@@ -43,8 +43,10 @@ jobs:
         
     # - name: Integration test
 
+      - name: Start test container
+        run: > 
+          pnpm db:up:test
+          && sleep 15
+
       - name:  End to end test
-        run: >
-          pnpm db:up:test &&
-          sleep 15 &&
-          pnpm test:e2e
+        run: pnpm test:e2e
