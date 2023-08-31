@@ -25,6 +25,7 @@ services:
         mode: host
     networks:
       - network_1
+    restart: always
     healthcheck:
       test: wget http://main-app:${SERVER_PORT} --spider --tries=1 -nv || exit 1
       interval: 1m30s
@@ -47,6 +48,13 @@ services:
       - db-config:/data/configdb:rw
     networks:
       - network_1
+    restart: always
+    healthcheck:
+      test:  mongosh --eval "db.stats().ok" --quiet
+      interval: 3m
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
 volumes:
   db-data:
