@@ -6,4 +6,4 @@ Sebuah aplikasi backend simpel dengan fungsi mencatat sebuah catatan yang terdir
 - [ ] Implementasi JWT dengan cookie
 - [ ] Meningkatkan keamanan aplikasi
 - [ ] Implementasi logging system untuk mencatat log aplikasi
-- [ ] Menerapkan caching dengan redis atau memchaced
+- [ ] Menerapkan caching dengan redis atau memcached
