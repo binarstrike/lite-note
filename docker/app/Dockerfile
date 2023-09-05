@@ -1,30 +1,29 @@
-FROM node:18-slim AS builder
+FROM node:18-alpine AS builder
 
 WORKDIR /build
 
-RUN apt-get update \
-	&& apt-get install -y openssl \
-	&& rm -rf /var/lib/apt/lists/* \
-	&& rm -rf /var/cache/apt/*
+RUN --mount=type=cache,id=apk-cache,target=/var/cache/apk apk add openssl
 
 RUN corepack enable pnpm
 
 COPY . .
-RUN pnpm install --frozen-lockfile \
+RUN --mount=type=cache,id=pnpm-store-cache,target=/root/.local/share/pnpm/store pnpm install --frozen-lockfile \
 	&& pnpm prisma generate \
-	&& pnpm build \
-	&& pnpm prune --prod
+	&& pnpm build
 
-FROM node:18-slim
-
-RUN apt-get update \
-	&& apt-get install -y openssl wget \
-	&& rm -rf /var/lib/apt/lists/* \
-	&& rm -rf /var/cache/apt/*
+FROM node:18-alpine
 
 WORKDIR /app
 
-COPY --from=builder /build/node_modules ./node_modules
+RUN corepack enable pnpm
+
+RUN --mount=type=cache,id=apk-cache,target=/var/cache/apk apk add openssl curl
+
+COPY ./prisma/schema.prisma ./package.json ./pnpm-lock.yaml ./
+RUN --mount=type=cache,id=pnpm-store-cache,target=/root/.local/share/pnpm/store pnpm install --offline --prod
+
 COPY --from=builder /build/dist ./dist
 
-CMD [ "node", "dist/main" ]
+COPY --chmod=700 ./scripts/app-entrypoint.sh /usr/local/bin/
+
+ENTRYPOINT [ "app-entrypoint.sh" ]
