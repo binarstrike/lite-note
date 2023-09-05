@@ -6,9 +6,10 @@ import { EnvParsedConfig as config } from 'src/config';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { UpdateUserDto } from 'src/user/dto';
 import { AppModule } from 'src/app.module';
+import { Test } from '@nestjs/testing';
+import { Note } from '@prisma/client';
 import { randomBytes } from 'crypto';
 import * as pactum from 'pactum';
-import { Test } from '@nestjs/testing';
 import { z } from 'zod';
 
 const TEST_SERVER_PORT = config.SERVER_PORT,
@@ -146,6 +147,13 @@ describe('End to end test', () => {
           .expect(({ res }) => tokensSchema.parse(res.json))
           .expectStatus(HttpStatus.CREATED);
       });
+      it('should throw a conflict response when user signs up with existing/duplicate account', async () => {
+        return pactum
+          .spec()
+          .post('/auth/signup')
+          .withBody({ ...user__yuuki, ...userCredentials })
+          .expectStatus(HttpStatus.CONFLICT);
+      });
     });
     describe('User Signin', () => {
       it('should throw if email empty', async () => {
@@ -166,7 +174,7 @@ describe('End to end test', () => {
           } satisfies Partial<UserLoginDto>)
           .expectStatus(HttpStatus.BAD_REQUEST);
       });
-      it('should throw if no body provided', async () => {
+      it('should throw a bad request response if no body or request payload is provided', async () => {
         return pactum.spec().post('/auth/signin').expectStatus(HttpStatus.BAD_REQUEST);
       });
       it('should signin', async () => {
@@ -176,10 +184,13 @@ describe('End to end test', () => {
           .withBody(userCredentials)
           .expect(({ res }) => tokensSchema.parse(res.json))
           .expectStatus(HttpStatus.OK)
-          .stores((_, res) => ({
-            [PACTUM_STORES_ACCESS_TOKEN]: res.body['accessToken' satisfies keyof Tokens],
-            [PACTUM_STORES_REFRESH_TOKEN]: res.body['refreshToken' satisfies keyof Tokens],
-          }));
+          .stores((_, res) => {
+            const body = res.body as Record<keyof Tokens, string>;
+            return {
+              [PACTUM_STORES_ACCESS_TOKEN]: body.accessToken,
+              [PACTUM_STORES_REFRESH_TOKEN]: body.refreshToken,
+            };
+          });
       });
     });
     describe('Refresh auth tokens', () => {
@@ -190,11 +201,12 @@ describe('End to end test', () => {
           .withHeaders(authHeader('refreshToken'))
           .expect(({ res }) => tokensSchema.parse(res.json))
           .expectStatus(HttpStatus.OK)
-          .stores((_, res) => ({
-            [PACTUM_STORES_REFRESH_TOKEN]: res.body['refreshToken' satisfies keyof Tokens],
-          }));
+          .stores((_, res) => {
+            const body = res.body as Record<keyof Tokens, string>;
+            return { [PACTUM_STORES_REFRESH_TOKEN]: body.refreshToken };
+          });
       });
-      it('should throw if wrong token is provided', async () => {
+      it('should throw a unauthorized response if wrong token is provided', async () => {
         return pactum
           .spec()
           .post('/auth/refresh')
@@ -217,16 +229,19 @@ describe('End to end test', () => {
           .withBody(userCredentials)
           .expect(({ res }) => tokensSchema.parse(res.json))
           .expectStatus(HttpStatus.OK)
-          .stores((_, res) => ({
-            [PACTUM_STORES_ACCESS_TOKEN]: res.body['accessToken' satisfies keyof Tokens],
-            [PACTUM_STORES_REFRESH_TOKEN]: res.body['refreshToken' satisfies keyof Tokens],
-          }));
+          .stores((_, res) => {
+            const body = res.body as Record<keyof Tokens, string>;
+            return {
+              [PACTUM_STORES_ACCESS_TOKEN]: body.accessToken,
+              [PACTUM_STORES_REFRESH_TOKEN]: body.refreshToken,
+            };
+          });
       });
     });
   });
   describe('User endpoint', () => {
     describe('Fetch user info', () => {
-      it('should get current user', async () => {
+      it('should get current user information', async () => {
         return pactum
           .spec()
           .get('/users/me')
@@ -240,10 +255,10 @@ describe('End to end test', () => {
             throw new Error('invalid response');
           });
       });
-      it('should throw unauthorized if no auth token is provided', async () => {
+      it('should throw a unauthorized response if no auth token is provided', async () => {
         return pactum.spec().get('/users/me').expectStatus(HttpStatus.UNAUTHORIZED);
       });
-      it('Edit user info', async () => {
+      it('should update user info', async () => {
         return pactum
           .spec()
           .patch('/users')
@@ -265,7 +280,7 @@ describe('End to end test', () => {
           .expectBody([])
           .expectJsonLength(0);
       });
-      it('should create note', async () => {
+      it('should create a new note', async () => {
         return pactum
           .spec()
           .post('/notes')
@@ -273,10 +288,11 @@ describe('End to end test', () => {
           .withBody(note__goToMarket)
           .expectStatus(HttpStatus.CREATED)
           .expectJsonMatch(note__goToMarket)
-          .stores((_, res) => ({
-            [PACTUM_STORES_NOTE_ID]: res.body['id'],
-          }));
-        //* menyimpan nilai id note pada variabel noteId
+          .stores((_, res) => {
+            const body = res.body as Note;
+            return { [PACTUM_STORES_NOTE_ID]: body.id };
+          });
+        //* menyimpan nilai id catatan pada variabel pactum stores noteId
       });
       it('should get notes', async () => {
         return pactum
@@ -310,7 +326,7 @@ describe('End to end test', () => {
             .expectStatus(HttpStatus.OK)
             .expectJsonMatch(note__updatedShoppingList);
         });
-        it('should response not found if an unknown note id is provided', async () => {
+        it('should throw a not found response if an unknown note id is provided', async () => {
           const randomHex: string = randomBytes(12).toString('hex');
           return pactum
             .spec()
