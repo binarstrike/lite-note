@@ -2,11 +2,11 @@ version: '3.5'
 
 services:
   main-app:
-    image: lite-note
+    image: lite-note-app
     build:
       context: .
       dockerfile: docker/app/Dockerfile
-    container_name: lite-note
+    container_name: lite-note-backend-api
     environment:
       - DATABASE_URL=mongodb://${DB_USER}:${DB_PASSWORD}@db/liteNote?replicaSet=rs0&authSource=admin
       - CORS_ORIGINS=${CORS_ORIGINS}
@@ -26,19 +26,22 @@ services:
     networks:
       - network_1
     restart: always
+    depends_on:
+      db:
+        condition: service_healthy
     healthcheck:
-      test: wget http://main-app:${SERVER_PORT} --spider --tries=1 -nv || exit 1
+      test: curl --fail http://main-app:${SERVER_PORT} || exit 1
       interval: 1m30s
       timeout: 5s
       retries: 3
       start_period: 5s
-  
+
   db:
     image: lite-note-db
     build:
       context: .
       dockerfile: docker/db/Dockerfile
-    container_name: lite-note-db
+    container_name: lite-note-backend-db
     environment:
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
@@ -51,7 +54,7 @@ services:
     restart: always
     healthcheck:
       test:  mongosh --eval "db.stats().ok" --quiet
-      interval: 3m
+      interval: 1m30s
       timeout: 5s
       retries: 5
       start_period: 10s
