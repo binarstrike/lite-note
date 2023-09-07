@@ -38,4 +38,6 @@ jobs:
           && sleep 15
 
       - name:  End to end test
-        run: pnpm test:e2e
+        run: >
+          pnpm prisma:push:test 
+          && pnpm test:e2e
