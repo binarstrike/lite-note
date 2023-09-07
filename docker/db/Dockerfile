@@ -1,7 +1,5 @@
 FROM mongo:6-jammy
 
-COPY db-entrypoint.sh /
+COPY --chmod=700 ./scripts/db-entrypoint.sh /usr/local/bin/
 
-RUN chmod 755 /db-entrypoint.sh
-
-ENTRYPOINT ["/db-entrypoint.sh"]
+ENTRYPOINT ["db-entrypoint.sh"]
