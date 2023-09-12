@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaClient } from '@prisma/client';
-import { EnvConfigType } from 'src/config';
+import { EnvConfigType } from 'src/types';
 
 @Injectable()
 export class PrismaService extends PrismaClient {
@@ -14,18 +14,12 @@ export class PrismaService extends PrismaClient {
     });
   }
   /**
-   * sebuah fungsi untuk membersihkan database digunakan saat melakukan testing pada aplikasi
+   * sebuah fungsi untuk menghapus semua record pada database saat melakukan pengujian pada aplikasi
    * @returns
    */
-  async cleanDb() {
+  async cleanDb(): Promise<void> {
     const env = this.config.get<EnvConfigType['NODE_ENV']>('NODE_ENV');
-    //* agar muncul autocomplete pada saat pengecekan environment/lingkungan dimana aplikasi berjalan.
-    //* inisialisasi terlebih dahulu ke sebuah variabel
     if (env === 'production') return;
-    //* sehingga dapat meminimalisir kesalahan pengetikan.
-    //* pengecekan ini dilakukan untuk mencegah database terhapus secara tidak sengaja pada production environment.
-    //* atau juga bisa menggunakan type casting jika env tidak diberi generic type secara eksplisit
-    //* if ((env as EnvConfigType['NODE_ENV']) === 'production') return;
     await this.$transaction([this.user.deleteMany(), this.note.deleteMany()]);
   }
 }

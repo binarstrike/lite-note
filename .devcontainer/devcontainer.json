@@ -1,7 +1,7 @@
 {
-    "image": "mcr.microsoft.com/devcontainers/javascript-node:0-18",
+    "image": "mcr.microsoft.com/devcontainers/typescript-node:20-buster",
     "features": {
         "ghcr.io/devcontainers/features/docker-in-docker:2": {}
     },
-    "postCreateCommand": "npm install -g @devcontainers/cli"
+    "postCreateCommand": "npm install -g @devcontainers/cli pnpm"
 }

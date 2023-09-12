@@ -23,11 +23,12 @@
     "prisma:push:dev": "dotenv -e .env.development -- prisma db push",
     "db:up:dev": "docker compose --env-file .env.development up dev_db -d",
     "db:remove:dev": "docker compose --env-file .env.development rm dev_db -s -f -v",
-    "db:restart:dev": "pnpm db:remove:dev && pnpm db:up:dev && sleep 10 || timeout 10 && pnpm prisma:push:dev",
+    "db:restart:dev": "pnpm db:remove:dev && pnpm db:up:dev && sleep 10 && pnpm prisma:push:dev",
     "db:up:test": "docker compose --env-file .env.test up test_db -d",
     "db:remove:test": "docker compose --env-file .env.test rm test_db -s -f -v",
-    "db:restart:test": "pnpm db:remove:test && pnpm db:up:test && sleep 10 || timeout 10 && pnpm prisma:push:test",
-    "test:e2e": "dotenv -e .env.test -- jest --config ./test/jest-e2e.json"
+    "db:restart:test": "pnpm db:remove:test && pnpm db:up:test && sleep 10 && pnpm prisma:push:test",
+    "test:e2e:watch": "dotenv -e .env.test -- jest --config ./test/jest-e2e.js --watchAll",
+    "test:e2e": "dotenv -e .env.test -- jest --config ./test/jest-e2e.js"
   },
   "dependencies": {
     "@nestjs/common": "^10.2.4",
