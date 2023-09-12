@@ -11,7 +11,7 @@ import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as argon from 'argon2';
-import { EnvConfigType } from 'src/config';
+import { EnvConfigType } from 'src/types';
 import { Tokens } from 'src/types';
 
 @Injectable()

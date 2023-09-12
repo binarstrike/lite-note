@@ -1,7 +1,7 @@
 {
-  "editor.fontFamily": "JetBrains Mono SemiBold",
+  "editor.fontFamily": "FiraCode Nerd Font SemiBold",
   "editor.fontLigatures": true,
-  "editor.fontSize": 14,
+  "editor.fontSize": 13,
   "[javascript]": {
     "editor.maxTokenizationLineLength": 2500,
     "editor.defaultFormatter": "esbenp.prettier-vscode",
@@ -9,7 +9,8 @@
     "editor.formatOnSaveMode": "file",
     "editor.formatOnType": false,
     "editor.tabSize": 2,
-    "files.eol": "\n"
+    "files.eol": "\n",
+    "editor.insertSpaces": true
   },
   "[typescript]": {
     "editor.maxTokenizationLineLength": 2500,
@@ -18,7 +19,8 @@
     "editor.formatOnSaveMode": "file",
     "editor.formatOnType": false,
     "editor.tabSize": 2,
-    "files.eol": "\n"
+    "files.eol": "\n",
+    "editor.insertSpaces": true
   },
   "[yaml]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
